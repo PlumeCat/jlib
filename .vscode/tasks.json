@@ -1,0 +1,44 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build - Debug",
+            "type": "shell",
+            "command": "make",
+            "problemMatcher": "$gcc",
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "CMake - Debug",
+            "type": "shell",
+            "command": "cmake .. -G 'Unix Makefiles'",
+            "options": {
+                "cwd": "build",
+                "env": {
+                    "CMAKE_BUILD_TYPE": "Debug"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Tests",
+            "type": "shell",
+            "dependsOn": "Build - Debug",
+            "command": "./jlib",
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
