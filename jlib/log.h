@@ -11,16 +11,6 @@ std::ostream& log_stream(std::ostream& o, const Arg& arg) {
     return o << arg;
 }
 
-// // terminate with the 2-argument version
-// template<bool Space, typename Arg1, typename Arg2>
-// std::ostream& log_stream(std::ostream& o, const Arg1& arg1, const Arg2& arg2) {
-//     o << arg1;
-//     if constexpr(Space) {
-//         o << ' ';
-//     }
-//     return o << arg2;
-// }
-
 template<bool Space, typename First, typename ...Args>
 std::ostream& log_stream(std::ostream& o, const First& first, const Args&... args) {
     log_stream<Space>(o, first);
@@ -31,7 +21,8 @@ std::ostream& log_stream(std::ostream& o, const First& first, const Args&... arg
     return o;
 }
 
-template<bool Space = true, bool Prefix = true, typename ...Args> void log(const Args&... args) {
+template<bool Space = true, bool Prefix = true, typename ...Args>
+void log(const Args&... args) {
     auto s = std::ostringstream{};
     if constexpr(Prefix) {
         log_stream<Space>(s, "LOG:", args..., '\n');

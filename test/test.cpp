@@ -85,15 +85,8 @@ TEST("generic ostream") {
     );
 }
 
-void foo();
-
 IMPLEMENT_TESTS()
 int main(int argc, char* argv[]) {
-    log("foo");
-    foo();
-    
     RUN_TESTS()
-
-    
     return 0;
 }

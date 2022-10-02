@@ -55,6 +55,20 @@ usage:
 #include <jlib/terminal_color.h>
 #include <jlib/log.h>
 
+
+// util
+#define paste(a, b) a##b
+
+// asserts
+#define ASSERT(cond) if (!(cond)) { throw std::runtime_error("Assertion failed: " #cond); }
+#define ASSERT_THROWS(code) \
+    do {\
+        try { code; }\
+        catch (...) { break; }\
+        throw std::runtime_error("Should have thrown, didn't");\
+    } while (0);\
+
+
 #ifdef ENABLE_TEST
 struct TestBase;
 
@@ -111,22 +125,11 @@ struct Test final : public TestBase {
     virtual void func() override;
 };
 
-
-#define paste(a, b) a##b
-
 #define TEST_(test_msg, file, line, counter)\
     static auto paste(__test_, counter) = Test<file, line>(test_msg);\
     template<> void Test<file, line>::func()
-
 #define TEST(test_msg) TEST_(test_msg, __FILE__, __LINE__, __COUNTER__)
 
-#define ASSERT(cond) if (!(cond)) { throw std::runtime_error("Assertion failed: " #cond); }
-#define ASSERT_THROWS(code) \
-    do {\
-        try { code; }\
-        catch (...) { break; }\
-        throw std::runtime_error("Should have thrown, didn't");\
-    } while (0);\
 
 #define IMPLEMENT_TESTS()\
     std::vector<TestBase*>& ALL_TESTS() {\
@@ -145,12 +148,12 @@ struct Test final : public TestBase {
         log(Colors::FG_YELLOW, "Tests complete", Colors::FG_DEFAULT);\
     }
 
-#define RUN_TESTS() { run_tests(); return ALL_TESTS_RESULT();}
+#define RUN_TESTS() { run_tests(); return ALL_TESTS_RESULT(); }
 
 
 #else
-#define TEST_(msg, line) void paste(test_unused_, line)
-#define TEST(msg) TEST_(msg, __LINE__)
+#define TEST_(msg, file, line, counter) static void paste(test_unused_, line) ()
+#define TEST(msg) TEST_(msg, __FILE__, __LINE__, __COUNTER__)
 #define IMPLEMENT_TESTS()
 #define RUN_TESTS()
 #endif

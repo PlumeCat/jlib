@@ -3,12 +3,6 @@
 
 using namespace std;
 
-const char* x = __FILE__;
-
-void foo() {
-    cout << "BASE: " << x << endl;
-}
-
 TEST("hashmap") {
-    throw runtime_error("hello world");
+    // throw runtime_error("hello world");
 }

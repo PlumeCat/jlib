@@ -7,7 +7,7 @@
             "command": "make",
             "problemMatcher": "$gcc",
             "options": {
-                "cwd": "${workspaceRoot}/build"
+                "cwd": "build/Debug"
             },
             "group": {
                 "kind": "build",
@@ -15,11 +15,24 @@
             }
         },
         {
+            "label": "Build - Release",
+            "type": "shell",
+            "command": "make",
+            "problemMatcher": "$gcc",
+            "options": {
+                "cwd": "build/Release"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
             "label": "CMake - Debug",
             "type": "shell",
-            "command": "cmake .. -G 'Unix Makefiles'",
+            "command": "cmake ../.. -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Debug",
             "options": {
-                "cwd": "build",
+                "cwd": "build/Debug",
                 "env": {
                     "CMAKE_BUILD_TYPE": "Debug"
                 }
@@ -27,18 +40,42 @@
             "problemMatcher": []
         },
         {
+            "label": "CMake - Release",
+            "type": "shell",
+            "command": "cmake ../.. -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release",
+            "options": {
+                "cwd": "build/Release",
+                "env": {
+                    "CMAKE_BUILD_TYPE": "Release"
+                }
+            },
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
             "label": "Run Tests",
             "type": "shell",
             "dependsOn": "Build - Debug",
             "command": "./jlib",
             "options": {
-                "cwd": "${workspaceRoot}/build"
+                "cwd": "build/Debug"
             },
             "problemMatcher": "$gcc",
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             }
+        },
+        {
+            "label": "Run Perf Tests",
+            "type": "shell",
+            "dependsOn": "Build - Release",
+            "command": "./jlib",
+            "options": {
+                "cwd": "build/Release"
+            },
+            "problemMatcher": [],
+            "group": "build"
         }
     ]
 }
