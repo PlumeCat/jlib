@@ -66,46 +66,67 @@ struct TestBase {
     const char* file;
     int line;
 
-    TestBase(const char* msg, const char* file, int line):
+    inline TestBase(const char* msg, const char* file, int line):
         msg(msg), file(file), line(line) {
         ALL_TESTS().push_back(this);
     }
-    void operator()() {
+    inline void operator()() {
         try {
             log("Running test: ", msg);
             func();
             log("...Done");
-            report(true);
-        } catch (...) {
-            report(false);
+            report(true, "");
+        } catch (std::exception& e) {
+            report(false, e.what());
         }
     }
 
-    void report(bool success) {
+    inline void report(bool success, const char* error) {
         // Format like GCC error messages so the visual studio code build configuration can click through to failing tests
         auto color = success ? Colors::FG_GREEN : Colors::FG_RED;
         auto message = success ? " success: " : " error: (test failed) ";
 
-        log<false, false>(file, ":", line, ":5:", color, message, Colors::FG_DEFAULT, msg);
+        log<false, false>(file, ":", line, ":5:", color, message, Colors::FG_RED, Colors::FG_DEFAULT, msg, error ? ": " : "", error);
     }
 
     virtual void func() = 0;
 };
 
+// template<const char* File, size_t Line>
+// struct Test {
+
+// };
+
+template<size_t N>
+struct StringLiteral {
+    constexpr StringLiteral(const char (&str)[N]) {
+        std::copy_n(str, N, value);
+    }
+    char value[N];
+};
+
+template<StringLiteral Filename, size_t Line>
+struct Test final : public TestBase {
+    Test(const char* msg): TestBase(msg, Filename.value, Line) {}
+    virtual void func() override;
+};
+
 
 #define paste(a, b) a##b
-#define TEST_(test_msg, file, line, counter) \
-    struct paste(Test_, counter) final: public TestBase {\
-        paste(Test_, counter)(const char* msg, const char* filename, int linenumber):\
-            TestBase(test_msg, filename, linenumber) {}\
-        virtual void func() override;\
-    };\
-    auto paste(___test_, counter) = paste(Test_, counter)(test_msg, file, line);\
-    void paste(Test_, counter)::func()
+
+#define TEST_(test_msg, file, line, counter)\
+    static auto paste(__test_, counter) = Test<file, line>(test_msg);\
+    template<> void Test<file, line>::func()
 
 #define TEST(test_msg) TEST_(test_msg, __FILE__, __LINE__, __COUNTER__)
 
-#define ASSERT(cond) if (!(cond)) { throw runtime_error("Assertion failed: " #cond); }
+#define ASSERT(cond) if (!(cond)) { throw std::runtime_error("Assertion failed: " #cond); }
+#define ASSERT_THROWS(code) \
+    do {\
+        try { code; }\
+        catch (...) { break; }\
+        throw std::runtime_error("Should have thrown, didn't");\
+    } while (0);\
 
 #define IMPLEMENT_TESTS()\
     std::vector<TestBase*>& ALL_TESTS() {\

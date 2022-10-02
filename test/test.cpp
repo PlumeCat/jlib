@@ -14,8 +14,6 @@
 #include <chrono>
 using namespace std;
 
-
-// TEST_("quick test heapsort", "hello", 1, 2) {
 TEST("test static heapsort") {
     constexpr auto N = 1000;
     auto input = array<uint32_t, N>{};
@@ -33,6 +31,11 @@ TEST("test static heapsort") {
     for (auto i = 1; i < N; i++) {
         ASSERT(output[i-1] >= output[i]);
     }
+}
+
+TEST("pop empty heap") {
+    auto h = dynamic_heap<int>{};
+    ASSERT_THROWS(h.pop());
 }
 
 TEST("test dynamic heapsort") {
@@ -82,9 +85,15 @@ TEST("generic ostream") {
     );
 }
 
+void foo();
+
 IMPLEMENT_TESTS()
 int main(int argc, char* argv[]) {
+    log("foo");
+    foo();
+    
     RUN_TESTS()
+
     
     return 0;
 }
