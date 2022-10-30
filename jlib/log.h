@@ -3,8 +3,13 @@
 #include <ostream>
 #include <sstream>
 #include <jlib/generic_ostream.h>
+#include <jlib/terminal_color.h>
 
 // very simple thread safe logging utility
+
+#ifdef JLIB_LOG_VISUALSTUDIO
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 
 template<bool Space, typename Arg>
 std::ostream& log_stream(std::ostream& o, const Arg& arg) {
@@ -29,5 +34,9 @@ void log(const Args&... args) {
     } else {
         log_stream<Space>(s, args..., '\n');
     }
-    std::cerr << s.str();
+    auto str = s.str();
+    #ifdef JLIB_LOG_VISUALSTUDIO
+    OutputDebugString(str.c_str());
+    #endif
+    std::cerr << str;
 }

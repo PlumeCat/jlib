@@ -4,6 +4,11 @@
 #include <string>
 #include <optional>
 
+std::optional<std::string> read_text_file(const std::string& fname);
+bool write_text_file(const std::string& fname, const std::string& data);
+
+#ifdef JLIB_IMPLEMENTATION
+
 std::optional<std::string> read_text_file(const std::string& fname) {
     auto file = std::ifstream(fname);
     if (!file.is_open()) {
@@ -27,3 +32,6 @@ bool write_text_file(const std::string& fname, const std::string& data) {
     file.write(data.data(), data.size());
     return true;
 }
+
+
+#endif
