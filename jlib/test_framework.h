@@ -86,10 +86,10 @@ struct TestBase {
     }
     inline void operator()() {
         try {
-            log("Running test: ", msg);
+            // log("Running test: ", msg);
             func();
-            log("...Done");
-            report(true, "");
+            // log("...Done");
+            report(true, nullptr);
         } catch (std::exception& e) {
             report(false, e.what());
         }
@@ -100,7 +100,7 @@ struct TestBase {
         auto color = success ? Colors::FG_GREEN : Colors::FG_RED;
         auto message = success ? " success: " : " error: (test failed) ";
 
-        log<false, false>(file, ":", line, ":5:", color, message, Colors::FG_RED, Colors::FG_DEFAULT, msg, error ? ": " : "", error);
+        log<false, false>(file, ":", line, ":5:", color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : "");
     }
 
     virtual void func() = 0;

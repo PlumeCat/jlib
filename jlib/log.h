@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ostream>
+#include <iostream>
 #include <sstream>
 #include <jlib/generic_ostream.h>
 #include <jlib/terminal_color.h>
@@ -10,6 +10,7 @@
 #ifdef JLIB_LOG_VISUALSTUDIO
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#endif
 
 template<bool Space, typename Arg>
 std::ostream& log_stream(std::ostream& o, const Arg& arg) {
