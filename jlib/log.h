@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <sstream>
-#include <jlib/generic_ostream.h>
+// #include <jlib/generic_ostream.h>
 #include <jlib/terminal_color.h>
 
 // very simple thread safe logging utility

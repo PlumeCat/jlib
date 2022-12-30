@@ -58,7 +58,7 @@
             "dependsOn": "Build - Debug",
             "command": "./jlib",
             "options": {
-                "cwd": "build/Debug"
+                "cwd": "build/Debug",
             },
             "problemMatcher": "$gcc",
             "group": {

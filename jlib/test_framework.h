@@ -106,11 +106,6 @@ struct TestBase {
     virtual void func() = 0;
 };
 
-// template<const char* File, size_t Line>
-// struct Test {
-
-// };
-
 template<size_t N>
 struct StringLiteral {
     constexpr StringLiteral(const char (&str)[N]) {

@@ -4,7 +4,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Launch",
-            "program": "${workspaceFolder}/build/jlib",
+            "program": "${workspaceFolder}/build/Debug/jlib",
             "args": [],
             "preLaunchTask": "Build - Debug",
             "cwd": "${workspaceRoot}",

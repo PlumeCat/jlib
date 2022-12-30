@@ -1,4 +1,5 @@
 #define TESTS_IMPLEMENTATION
+#define JLIB_IMPLEMENTATION
 #include <jlib/test_framework.h>
 #include <jlib/generic_ostream.h>
 #include <jlib/log.h>
@@ -12,7 +13,12 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <chrono>
+#include <filesystem>
 using namespace std;
+
+TEST("test pwd") {
+    log("CWD: ", filesystem::current_path());
+}
 
 TEST("test static heapsort") {
     constexpr auto N = 1000;
@@ -62,7 +68,7 @@ TEST("test dynamic heapsort") {
 }
 
 TEST("test file read") {
-    ASSERT(read_text_file("../test/test_data.txt").value() == 
+    ASSERT(read_text_file("test/test_data.txt").value() == 
         "hello world\n"
         "this is a c++ program\n"
         "end\n"
