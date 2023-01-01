@@ -74,6 +74,7 @@
         "__tree": "cpp",
         "map": "cpp",
         "unordered_set": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "version": "cpp"
     }
 }
