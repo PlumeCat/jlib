@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <optional>
+#include <limits>
 
 std::optional<std::string> read_text_file(const std::string& fname);
 bool write_text_file(const std::string& fname, const std::string& data);
@@ -14,13 +15,19 @@ std::optional<std::string> read_text_file(const std::string& fname) {
     if (!file.is_open()) {
         return std::nullopt;
     }
-    auto start = file.tellg();
-    file.seekg(0, std::ios::end);
-    auto end = file.tellg();
-    auto size = (size_t)(end - start);
-    file.seekg(0, std::ios::beg);
-    auto data = std::string(size, 0);
-    file.read(data.data(), size);
+    //auto start = file.tellg();
+    //file.seekg(0, std::ios::end);
+    //auto end = file.tellg();
+    //auto length = (size_t)(end - start);
+    //file.seekg(0, std::ios::beg);
+
+    file.ignore(std::numeric_limits<std::streamsize>::max());
+    std::streamsize length = file.gcount();
+    file.clear();   //  Since ignore will have set eof.
+    file.seekg(0, std::ios_base::beg);    
+    
+    auto data = std::string(length, 0);
+    file.read(data.data(), length);
     return std::optional(data);
 }
 
