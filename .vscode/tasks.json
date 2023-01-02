@@ -7,7 +7,7 @@
             "command": "make",
             "problemMatcher": "$gcc",
             "options": {
-                "cwd": "build/Debug"
+                "cwd": "${workspaceFolder}/build/Debug"
             },
             "group": {
                 "kind": "build",
@@ -20,7 +20,7 @@
             "command": "make",
             "problemMatcher": "$gcc",
             "options": {
-                "cwd": "build/Release"
+                "cwd": "${workspaceFolder}/build/Release"
             },
             "group": {
                 "kind": "build",
@@ -32,7 +32,7 @@
             "type": "shell",
             "command": "cmake ../.. -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Debug",
             "options": {
-                "cwd": "build/Debug",
+                "cwd": "${workspaceFolder}/build/Debug",
                 "env": {
                     "CMAKE_BUILD_TYPE": "Debug"
                 }
@@ -44,7 +44,7 @@
             "type": "shell",
             "command": "cmake ../.. -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release",
             "options": {
-                "cwd": "build/Release",
+                "cwd": "${workspaceFolder}/build/Release",
                 "env": {
                     "CMAKE_BUILD_TYPE": "Release"
                 }
@@ -58,9 +58,9 @@
             "dependsOn": "Build - Debug",
             "command": "./jlib",
             "options": {
-                "cwd": "build/Debug",
+                "cwd": "${workspaceFolder}/build/Debug",
             },
-            "problemMatcher": "$gcc",
+            "problemMatcher": [ "$gcc" ],
             "group": {
                 "kind": "build",
                 "isDefault": false
@@ -72,7 +72,7 @@
             "dependsOn": "Build - Release",
             "command": "./jlib",
             "options": {
-                "cwd": "build/Release"
+                "cwd": "${workspaceFolder}/build/Release"
             },
             "problemMatcher": [],
             "group": "build"
