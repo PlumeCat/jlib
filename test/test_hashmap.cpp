@@ -21,6 +21,7 @@ TEST("hashmap") {
     ASSERT(h.find("hello") != h.end());
 
     for (const auto& [ k, v ]: h) {
+        // ASSERT(h[k] != v);
         log(k, v);
     }
 

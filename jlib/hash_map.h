@@ -134,8 +134,16 @@ struct hash_map {
     }
 
     // Create, read, update, delete
+    const Value& operator[](const Key& key) const { return get(key); }
     Value& operator[](const Key& key) { return get(key); }
     Value& get(const Key& key) {
+        auto iter = find(key);
+        if (iter == end()) {
+            NOT_FOUND(key);
+        }
+        return iter->second;
+    }
+    const Value& get(const Key& key) const {
         auto iter = find(key);
         if (iter == end()) {
             NOT_FOUND(key);
