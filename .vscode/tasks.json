@@ -11,7 +11,7 @@
             },
             "group": {
                 "kind": "build",
-                "isDefault": false
+                "isDefault": true
             }
         },
         {
@@ -24,7 +24,7 @@
             },
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             }
         },
         {
@@ -52,30 +52,30 @@
             "problemMatcher": [],
             "group": "build"
         },
-        {
-            "label": "Run Tests",
-            "type": "shell",
-            "dependsOn": "Build - Debug",
-            "command": "./jlib",
-            "options": {
-                "cwd": "${workspaceFolder}/build/Debug",
-            },
-            "problemMatcher": [ "$gcc" ],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            }
-        },
-        {
-            "label": "Run Perf Tests",
-            "type": "shell",
-            "dependsOn": "Build - Release",
-            "command": "./jlib",
-            "options": {
-                "cwd": "${workspaceFolder}/build/Release"
-            },
-            "problemMatcher": [],
-            "group": "build"
-        }
+        // {
+        //     "label": "Run Tests",
+        //     "type": "shell",
+        //     "dependsOn": "Build - Debug",
+        //     "command": "./jlib",
+        //     "options": {
+        //         "cwd": "${workspaceFolder}/build/Debug",
+        //     },
+        //     "problemMatcher": [ "$gcc" ],
+        //     "group": {
+        //         "kind": "build",
+        //         "isDefault": false
+        //     }
+        // },
+        // {
+        //     "label": "Run Perf Tests",
+        //     "type": "shell",
+        //     "dependsOn": "Build - Release",
+        //     "command": "./jlib",
+        //     "options": {
+        //         "cwd": "${workspaceFolder}/build/Release"
+        //     },
+        //     "problemMatcher": [],
+        //     "group": "build"
+        // }
     ]
 }
