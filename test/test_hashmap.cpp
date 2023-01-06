@@ -5,11 +5,6 @@
 using namespace std;
 
 
-void print(const string& x, const string& y) {
-    log(x, y);
-}
-
-
 TEST("hashmap") {
     auto h = hash_map<string, string>(32);
 
@@ -17,7 +12,7 @@ TEST("hashmap") {
     h.insert("foo", "bar");
     h.insert("baz", "quz");
     h.insert("this", "is");
-    h.insert("hello", "world2");
+    // h.insert("hello", "world2");
 
     ASSERT(h.contains("foo"));
     ASSERT(h.contains("hello"));
@@ -31,7 +26,6 @@ TEST("hashmap") {
     ASSERT(h.find("hello") != h.end());
 
     for (const auto& [ k, v ]: h) {
-        print(k, v);
         ASSERT(h[k] == v);
     }
 

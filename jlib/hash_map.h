@@ -173,12 +173,9 @@ struct hash_map {
         auto pos = bucket * K;
         auto candidate = EMPTY;
 
-        log("insert", key, value, h, bucket, pos);
-
         for (auto i = 0; i < K; i++) {
             if (candidate == EMPTY && nodes[pos + i].second == EMPTY) {
                 candidate = pos + i;
-                log("candidate", candidate);
             } else if (nodes[pos + i].first.first == key) {
                 ALREADY_EXISTS(key);
             }
