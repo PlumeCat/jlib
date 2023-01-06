@@ -17,6 +17,11 @@ TEST("hashmap") {
     ASSERT(h.contains("foo"));
     ASSERT(h.contains("hello"));
 
+    h.remove("foo");
+
+    ASSERT(!h.contains("foo"))
+    ASSERT(h.contains("baz"))
+
     ASSERT(!h.empty());
     ASSERT(h.find("hello") != h.end());
 
