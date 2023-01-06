@@ -10,11 +10,6 @@
 #include <cstdint>
 #include <utility>
 
-#include "log.h"
-
-
-class KeyError: std::exception {};
-
 static const uint32_t EMPTY = std::numeric_limits<uint32_t>::max();
 
 template<typename Key>
@@ -47,13 +42,14 @@ struct hash_map {
     private:
         OwnerType* owner;
         uint32_t index;
+        friend class hash_map;
 
     public:
         iter(OwnerType* owner, uint32_t index): owner(owner), index(index) {}
         PairType& operator*() { return owner->nodes[index].first; }
         PairType* operator->() { return &owner->nodes[index].first; }
-        bool operator != (const iter& i) { return index != i.index; }
-        bool operator == (const iter& i) { return index == i.index; }
+        bool operator != (const iter& i) const { return index != i.index; }
+        bool operator == (const iter& i) const { return index == i.index; }
         iter& operator++()   {
             while (index < owner->NK && owner->nodes[++index].second == EMPTY) {};
             return *this;
@@ -214,7 +210,8 @@ struct hash_map {
         if (iter == end()) {
             NOT_FOUND(key);
         }
-        *(iter.ptr) = { { Key(), Value() }, EMPTY };
+        nodes[iter.index] = { { Key(), Value() }, EMPTY };
+        // *(iter.ptr) = { { Key(), Value() }, EMPTY };
     }
 
 
@@ -245,66 +242,6 @@ private:
 // TODO: Shift-forward hash map
 // Linear probed, but does a shift-forward upon collision
 // Keeps clusters of elements with the same target bucket contiguous and in order of target bucket
-
-/*
-
-    struct Node { alive, key, hash, cluster, value }
-    struct Iterator {}
-
-    N = 2 ** M for some integer M
-    Node nodes[N]
-    
-    
-    begin() / end() -> Iterator
-    size() / empty() / clear()
-
-    find_index(k)
-        // returns the open index of k
-        // ie the actual physical location of k in the internal array
-        p = hash(k) % N
-        while nodes[p].alive
-            if nodes[p].key == k
-                return p // maybe return a writable iterator?
-            p = p + 1 // mod N
-        ERROR_NOT_FOUND
-    
-    get(k)
-        // get value at k, or ERROR_NOT_FOUND
-        index = find_index(k)
-        return nodes[index].value
-
-    update(k, v)
-        // update value at k, or ERROR_NOT_FOUND
-        index = find_index(k)
-        nodes[index] = { k, v }
-
-    insert(k, v)
-        // find cluster for k
-
-        h = hash(k)
-        p = h % N
-        start_p = p
-
-        while nodes[p].alive
-            // probe forward to find our cluster
-
-            if nodes[p].cluster < p
-                //
-            elif nodes[p].cluster == p
-                // in correct cluster
-            elif nodes[p].cluster > p
-                // overshoot
-
-
-
-    delete(k)
-
-*/
-
-// */
-
-
-// /*
 
 // Shift-Forward Hash Map
 //      A linear probing hash map
