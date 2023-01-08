@@ -9,14 +9,24 @@
 #include <limits>
 #include <cstdint>
 #include <utility>
-
-static const uint32_t EMPTY = std::numeric_limits<uint32_t>::max();
+#include <type_traits>
 
 template<typename Key>
 struct default_hash {
-    uint32_t operator()(const Key&) const;
+    uint32_t operator()(const Key&) const {
+        static_assert(false, "Not implemented!");
+    }
 };
 
+// default hash to use for integer or enum keys
+template<typename = std::enable_if_t<std::is_integral_v<T>>>
+struct default_hash<typename T> {
+    uint32_t operator()(const T& key) const {
+        return (uint32_t)key;
+    }
+};
+
+// default hash to use for string keys
 template<>
 struct default_hash<std::string> {
     uint32_t operator()(const std::string& key) const {
@@ -36,7 +46,7 @@ struct default_hash<std::string> {
 // there are N slots for a given hash collision
 // if they are exhausted, capacity is doubled (bucket size stays the same) and rehash everything
 // TODO: replace with hopefully better performing "shift forward hash map"
-template<typename Key, typename Value, typename HashFunc = default_hash<Key>>
+template<typename Key, typename Value, typename HashFunc = default_hash<Key>, uint32_t EMPTY = std::numeric_limits<uint32_t>::max()>
 struct hash_map {
     template<typename OwnerType, typename PairType> struct iter {
     private:
@@ -88,6 +98,12 @@ struct hash_map {
         first_node(EMPTY),
         last_node(EMPTY),
         num_nodes(0) {}
+
+    hash_map(const std::initializer_list<kv_pair>& initializer): hash_map() {
+        for (auto& [ k, v ]: initializer) {
+            insert(k, v);
+        }
+    }
     
     // Iterators
     const_iterator begin() const { return { this, num_nodes ? first_node : NK }; }
@@ -176,7 +192,7 @@ struct hash_map {
         for (auto i = 0; i < K; i++) {
             if (candidate == EMPTY && nodes[pos + i].second == EMPTY) {
                 candidate = pos + i;
-            } else if (nodes[pos + i].first.first == key) {
+            } else if (nodes[pos + i].second == h && nodes[pos + i].first.first == key) {
                 ALREADY_EXISTS(key);
             }
         }
@@ -223,7 +239,7 @@ private:
     void resize() {
         // double N, and rehash everything
         // TODO: pretty inefficient
-        auto new_hash_map = hash_map<Key, Value, HashFunc>(N * 2, K);
+        auto new_hash_map = hash_map<Key, Value, HashFunc, EMPTY>(N * 2, K);
         for (auto& i: *this) {
             new_hash_map.insert(i.first, i.second);
         }
