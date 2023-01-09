@@ -11,25 +11,17 @@
 #include <utility>
 #include <type_traits>
 
-template<typename Key>
-struct default_hash {
-    uint32_t operator()(const Key&) const {
-        static_assert(false, "Not implemented!");
+
+template <typename T, bool = std::is_integral_v<T>>
+struct default_hash_helper {
+    static uint32_t hash(const T& t) {
+        return (uint32_t)t;
     }
 };
 
-// default hash to use for integer or enum keys
-template<typename = std::enable_if_t<std::is_integral_v<T>>>
-struct default_hash<typename T> {
-    uint32_t operator()(const T& key) const {
-        return (uint32_t)key;
-    }
-};
-
-// default hash to use for string keys
 template<>
-struct default_hash<std::string> {
-    uint32_t operator()(const std::string& key) const {
+struct default_hash_helper<std::string, false> {
+    static uint32_t hash(const std::string& key) {
         const uint64_t p = 31; // 53
         const uint64_t m = 1e9 + 9;
         uint64_t hash = 0;
@@ -39,6 +31,14 @@ struct default_hash<std::string> {
             pp = (pp * p) % m;
         }
         return hash; // smaller than m so fits into u32
+    }
+};
+
+
+template<typename Key>
+struct default_hash {
+    uint32_t operator()(const Key& key) const {
+        return default_hash_helper<Key>::hash(key);
     }
 };
 
@@ -72,6 +72,7 @@ struct hash_map {
     };
     
     // key, value, hash (before mod)
+    using type = hash_map<Key, Value, HashFunc, EMPTY>;
     using kv_pair = std::pair<Key, Value>;
     using node = std::pair<kv_pair, uint32_t>;
     using iterator = iter<hash_map, kv_pair>;
@@ -130,7 +131,7 @@ struct hash_map {
         auto bucket = h & (N - 1);
         auto pos = bucket * K;
         for (auto i = 0; i < K; i++) {
-            if (nodes[pos + i].second != EMPTY && nodes[pos + i].first.first == key) {
+            if (nodes[pos + i].second == h && nodes[pos + i].first.first == key) {
                 return { this, pos + i };
             }
         }
@@ -141,16 +142,48 @@ struct hash_map {
         auto bucket = h & (N - 1);
         auto pos = bucket * K;
         for (auto i = 0; i < K; i++) {
-            if (nodes[pos + i].second != EMPTY && nodes[pos + i].first.first == key) {
+            if (nodes[pos + i].second == h && nodes[pos + i].first.first == key) {
                 return { this, pos + i };
             }
         }
         return end();
     }
 
+private:
+    // if the element exists, return true and out_index contains the internal index
+    // if the element does not exist, return false, and out_index contains the position to insert
+    // if false and out_index is EMPTY, insert will cause resize
+    bool find_or_suggest(const Key& key, uint32_t& out_index) const {
+        auto h = hash_func(key);
+        auto bucket = h & (N - 1);
+        auto pos = bucket * K;
+        auto candidate = EMPTY;
+        for (auto i = 0; i < K; i++) {
+            if (nodes[pos + i].second == EMPTY) {
+                candidate = (candidate == EMPTY) ? pos + i : candidate;
+            }
+            else if (nodes[pos + i].second == h && nodes[pos + i].first.first == key) {
+                // already exists
+                out_index = pos + i;
+                return true;
+            }
+        }
+        out_index = candidate;
+        return false;
+    }
+public:
+
     // Create, read, update, delete
     const Value& operator[](const Key& key) const { return get(key); }
-    Value& operator[](const Key& key) { return get(key); }
+    Value& operator[](const Key& key) {
+        auto index = uint32_t { 0 };
+        if (find_or_suggest(key, index)) {
+            return nodes[index].first.second;
+        } else {
+            return nodes[insert(key, Value()).index].first.second;
+        }
+    }
+    
     Value& get(const Key& key) {
         auto iter = find(key);
         if (iter == end()) {
@@ -183,7 +216,7 @@ struct hash_map {
         return iter->second;
     }
 
-    void insert(const Key& key, const Value& value) {
+    iterator insert(const Key& key, const Value& value) {
         auto h = hash_func(key);
         auto bucket = h & (N - 1);
         auto pos = bucket * K;
@@ -201,12 +234,13 @@ struct hash_map {
         if (candidate == EMPTY) {
             // ran out of slots, rehash needed
             resize();
-            insert(key, value);
+            return insert(key, value);
         } else {
             nodes[candidate] = { { key, value }, h };
             first_node = (first_node == EMPTY) ? candidate : std::min(first_node, candidate);
             last_node = (last_node == EMPTY) ? candidate : std::max(last_node, candidate);
             num_nodes += 1;
+            return { this, candidate };
         }
     }
 
@@ -239,7 +273,7 @@ private:
     void resize() {
         // double N, and rehash everything
         // TODO: pretty inefficient
-        auto new_hash_map = hash_map<Key, Value, HashFunc, EMPTY>(N * 2, K);
+        auto new_hash_map = type(N * 2, K);
         for (auto& i: *this) {
             new_hash_map.insert(i.first, i.second);
         }

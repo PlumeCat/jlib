@@ -123,6 +123,7 @@ struct Test final : public TestBase {
 #define TEST_(test_msg, file, line, counter)\
     static auto paste(__test_, counter) = Test<file, line>(test_msg);\
     template<> void Test<file, line>::func()
+
 #define TEST(test_msg) TEST_(test_msg, __FILE__, __LINE__, __COUNTER__)
 
 
