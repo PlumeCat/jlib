@@ -26,7 +26,7 @@ TEST("hashmap") {
 
     for (const auto& [ k, v ]: h) {
         ASSERT(h[k] == v);
-        log(k, v);
+        // log(k, v);
     }
 
 }
@@ -42,7 +42,7 @@ TEST("integer hashmap") {
 
     for (const auto& [ k, v ]: h) {
         ASSERT(h[k] == v);
-        log(k, v);
+        // log(k, v);
     }
 
     ASSERT_THROWS(h.remove(5));
@@ -70,7 +70,8 @@ TEST("enum hashmap") {
     };
 
     for (const auto& [ k, v ]: FooName) {
-        log((uint32_t)k, v);
+        // log((uint32_t)k, v);
+        ASSERT(FooName[k] == v);
     }
 }
 
