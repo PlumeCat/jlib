@@ -102,6 +102,13 @@ public:
         return v;
     }
 
+    T* index_to_pointer(uint32_t index) {
+        return &storage[index];
+    }
+    uint32_t pointer_to_index(T* ptr) {
+        return (ptr - storage.data()) / sizeof(T);
+    }
+
     uint32_t add(const T& value) {
         if (free_slots.size()) {
             // use a free slot if possible to minimize gaps
@@ -110,6 +117,7 @@ public:
             // assign value to slot
             storage[index] = value;
             is_busy[index] = true;
+            return index;
         } else {
             if constexpr (AllowResize) {
                 auto old_cap = storage.capacity();
@@ -120,10 +128,12 @@ public:
                     is_busy.resize(new_cap, false);
                 }
                 is_busy[storage.size() - 1] = true;
+                return storage.size() - 1;
             } else {
                 if (storage.size() < storage.capacity) {
                     is_busy[storage.size()] = true;
                     storage.emplace_back(value);
+                    return storage.size();
                 } else {
                     throw std::runtime_error("Full!");
                 }
