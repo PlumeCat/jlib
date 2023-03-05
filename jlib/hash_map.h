@@ -61,12 +61,14 @@ struct hash_map {
         bool operator != (const iter& i) const { return index != i.index; }
         bool operator == (const iter& i) const { return index == i.index; }
         iter& operator++()   {
-            while (index < owner->NK && owner->nodes[++index].second == EMPTY) {};
+            index++;
+            while (index < owner->NK && owner->nodes[index].second == EMPTY) { index++; };
             return *this;
         }
         iter operator++(int) {
             auto t = *this;
-            while (index < owner->NK && owner->nodes[++index].second == EMPTY) {};
+            index++;
+            while (index < owner->NK && owner->nodes[index].second == EMPTY) { index++; };
             return t;
         }
     };
@@ -274,8 +276,8 @@ private:
         // double N, and rehash everything
         // TODO: pretty inefficient
         auto new_hash_map = type(N * 2, K);
-        for (auto& i: *this) {
-            new_hash_map.insert(i.first, i.second);
+        for (iterator i = begin(); i != end(); i++) {
+            new_hash_map.insert(i->first, i->second);
         }
         // printf("REHASHING\n");
         *this = std::move(new_hash_map);

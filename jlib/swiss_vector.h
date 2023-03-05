@@ -130,10 +130,10 @@ public:
                 is_busy[storage.size() - 1] = true;
                 return storage.size() - 1;
             } else {
-                if (storage.size() < storage.capacity) {
+                if (storage.size() < storage.capacity()) {
                     is_busy[storage.size()] = true;
                     storage.emplace_back(value);
-                    return storage.size();
+                    return storage.size() - 1;
                 } else {
                     throw std::runtime_error("Full!");
                 }
