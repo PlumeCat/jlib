@@ -61,14 +61,20 @@ struct hash_map {
         bool operator != (const iter& i) const { return index != i.index; }
         bool operator == (const iter& i) const { return index == i.index; }
         iter& operator++()   {
-            index++;
-            while (index < owner->NK && owner->nodes[index].second == EMPTY) { index++; };
+            while (true) {
+                if (index == owner->NK) {
+                    break;
+                }
+                index++;
+                if (owner->nodes[index].second != EMPTY) {
+                    break;
+                }
+            }
             return *this;
         }
         iter operator++(int) {
             auto t = *this;
-            index++;
-            while (index < owner->NK && owner->nodes[index].second == EMPTY) { index++; };
+            ++(*this);
             return t;
         }
     };
