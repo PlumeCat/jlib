@@ -26,7 +26,6 @@ TEST("hashmap") {
 
     for (const auto& [ k, v ]: h) {
         ASSERT(h[k] == v);
-        // log(k, v);
     }
 
 }
@@ -42,7 +41,6 @@ TEST("integer hashmap") {
 
     for (const auto& [ k, v ]: h) {
         ASSERT(h[k] == v);
-        // log(k, v);
     }
 
     ASSERT_THROWS(h.remove(5));
@@ -75,3 +73,61 @@ TEST("enum hashmap") {
     }
 }
 
+
+#define jenum_name Foo
+#define jenum() \
+    jenum_entry(A)\
+    jenum_entry(B)\
+    jenum_entry(C)\
+    jenum_entry(D)\
+    jenum_entry(E)\
+    jenum_entry(F)\
+    jenum_entry(G)\
+    jenum_entry(H)\
+    jenum_entry(I)\
+    jenum_entry(J)\
+    jenum_entry(K)\
+    jenum_entry(L)\
+    jenum_entry(M)\
+    jenum_entry(N)\
+    jenum_entry(O)\
+    jenum_entry(P)\
+    jenum_entry(Q)
+#include  <jlib/jenum.h>
+
+TEST("enum hashmap, rehashing and iterate") {
+    auto foo_name = hash_map<Foo, string>{};
+    foo_name.insert(Foo::A, "A");
+    foo_name.insert(Foo::B, "B");
+    foo_name.insert(Foo::C, "C");
+    foo_name.insert(Foo::D, "D");
+    foo_name.insert(Foo::E, "E");
+    foo_name.insert(Foo::F, "F");
+    foo_name.insert(Foo::G, "G");
+    foo_name.insert(Foo::H, "H");
+    foo_name.insert(Foo::I, "I");
+    foo_name.insert(Foo::J, "J");
+    foo_name.insert(Foo::K, "K");
+    foo_name.insert(Foo::L, "L");
+    foo_name.insert(Foo::M, "M");
+    foo_name.insert(Foo::N, "N");
+    foo_name.insert(Foo::O, "O");
+    foo_name.insert(Foo::P, "P");
+    foo_name.insert(Foo::Q, "Q");
+
+    for (const auto& [ k, v ]: foo_name) {
+        ASSERT(foo_name[k] == v)
+        log(to_string(k), v);
+    }
+}
+
+TEST("iterate") {
+    auto h = hash_map<string, double> {
+        { "x", 1 },
+        { "y", 2 },
+    };
+
+    for (const auto& [ k, v ]: h) {
+        log(k, v);
+    }
+}

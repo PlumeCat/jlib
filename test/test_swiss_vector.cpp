@@ -46,15 +46,17 @@ TEST("remove from end, free slots not used") {
     ASSERT(vec.get_free().size() == 0);
 }
 
-// TEST("swiss_vector iteration") {
-//     auto vec = swiss_vector<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-//     vec.remove(1);
-//     vec.remove(3);
-//     vec.remove(5);
+TEST("swiss_vector iteration") {
+    auto vec = swiss_vector<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
-//     auto total = 0;
-//     for (auto& i: vec) {
-//         total += i;
-//     }
-//     ASSERT(total == 43);
-// }
+    // make some gaps
+    vec.remove(1);
+    vec.remove(3);
+    vec.remove(5);
+
+    // auto total = 0;
+    // for (auto& i: vec) {
+    //     total += i;
+    // }
+    // ASSERT(total == 43);
+}

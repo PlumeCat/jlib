@@ -60,12 +60,11 @@ struct hash_map {
         PairType* operator->() { return &owner->nodes[index].first; }
         bool operator != (const iter& i) const { return index != i.index; }
         bool operator == (const iter& i) const { return index == i.index; }
+
         iter& operator++()   {
-            while (true) {
-                if (index == owner->NK) {
-                    break;
-                }
+            while (index < owner->NK) {
                 index++;
+                if (index >= owner->NK) { break; }
                 if (owner->nodes[index].second != EMPTY) {
                     break;
                 }

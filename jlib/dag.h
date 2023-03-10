@@ -25,6 +25,4 @@ public:
     }
 };
 
-void foo() {
-
-}
+// TODO: topo sort
