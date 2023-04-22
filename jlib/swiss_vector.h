@@ -165,8 +165,15 @@ public:
 
     T* data() { return storage.data(); }
     bool busy(uint32_t index) { return is_busy[index]; }
-    uint32_t size() const { return storage.size(); }
+    
+    // size of the internal vector
+    uint32_t internal_size() const { return storage.internal_size(); }
+
+    // the number of active elements
     uint32_t count() const { return storage.size() - free_slots.size(); }
+
+    // capacity of the internal vector; adding more than this number of
+    // elements will invalidate pointers
     uint32_t capacity() const { return storage.capacity(); }
 
     iterator begin() {
