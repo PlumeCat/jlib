@@ -42,7 +42,7 @@ std::ostream& log_stream(std::ostream& o, const First& first, const Args&... arg
     return o;
 }
 
-template<bool Space = true, bool Prefix = true, typename ...Args>
+template<bool Space = true, bool Prefix = false, typename ...Args>
 void log(const Args&... args) {
     auto s = std::ostringstream{};
     if constexpr(Prefix) {
