@@ -11,3 +11,13 @@ template<typename F> static deferred<F> operator<<(defer_dummy, F f) { return de
 #define PASTE(a, b) a##b
 #define defer2(c) auto PASTE(deferred__, c) = defer_dummy() << [&]
 #define defer defer2(__COUNTER__)
+
+/*
+Usage:
+
+    void f() {
+        auto f = fopen("...");
+
+        defer { fclose(f); }
+    }
+*/
