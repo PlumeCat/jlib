@@ -13,7 +13,10 @@ public:
         BG_RED      = 41,
         BG_GREEN    = 42,
         BG_BLUE     = 44,
-        BG_DEFAULT  = 49
+        BG_DEFAULT  = 49,
+
+        FG_GREY1    = 37,
+        FG_GREY2    = 90,
     };
 };
 
