@@ -15,23 +15,29 @@
 #define OutputDebugString(x)
 #endif
 
+struct log_pad { size_t n = 0; char ch = ' '; };
+
+
+std::ostream& operator<<(std::ostream& o, const uint8_t& arg);
+std::ostream& operator<<(std::ostream& o, const log_pad& align);
+
+#ifdef JLIB_IMPLEMENTATION
+std::ostream& operator<<(std::ostream& o, const uint8_t& arg) {
+    return o << (int)arg;
+}
+std::ostream& operator<<(std::ostream& o, const log_pad& align) {
+    auto pos = o.tellp() - std::streampos { 0 };
+    while (pos++ < align.n) {
+        o << align.ch;
+    }
+    return o;
+}
+#endif
+
 template<bool Space, typename Arg>
 std::ostream& log_stream(std::ostream& o, const Arg& arg) {
     return o << arg;
 }
-
-
-#ifdef JLIB_IMPLEMENTATION
-template<>
-std::ostream& log_stream<true, uint8_t>(std::ostream& o, const uint8_t& arg) {
-    return o << (int)arg;
-}
-template<>
-std::ostream& log_stream<false, uint8_t>(std::ostream& o, const uint8_t& arg) {
-    return o << (int)arg;
-}
-#endif
-
 template<bool Space, typename First, typename ...Args>
 std::ostream& log_stream(std::ostream& o, const First& first, const Args&... args) {
     log_stream<Space>(o, first);
