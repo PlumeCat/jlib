@@ -7,6 +7,19 @@
 
 std::optional<std::string> read_text_file(const std::string& fname);
 bool write_text_file(const std::string& fname, const std::string& data);
+template<typename LineCallback> bool read_text_file(const std::string& fname, LineCallback callback) {
+    auto file = std::ifstream(fname);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    auto line = std::string{};
+    while (std::getline(file, line)) {
+        callback(line);
+    }
+
+    return true;
+}
 
 #ifdef JLIB_IMPLEMENTATION
 

@@ -9,10 +9,10 @@ you should use more advanced gtest for more serious stuff
 usage:
 
     - define tests with the TEST() macro, see below
-    - tests can be defined in any cpp, avoid defining in headers (probably breaks with multiply-defined symbols if a header is included in multiple TU)
+    - tests can be defined in any cpp
+        avoid defining in headers (probably breaks with multiply-defined symbols if a header is included in multiple TU)
         can be inline next to the definition of whatever is being tested
         or in separate dedicated 'test-*.cpp' files
-        avoid tests in header files
     - put IMPLEMENT_TESTS() somewhere once,
         in a translation unit that includes test_framework.h;
         can be its own file or just above main
@@ -20,8 +20,8 @@ usage:
     - build and run with the macro ENABLE_TEST defined
         it will run all tests instead of the program
         you can run tests in debug and release mode
-    
-    Example:
+
+example:
 
     // in "some_file.cpp"
 
@@ -46,6 +46,11 @@ usage:
         RUN_TESTS()
         ...
     }
+
+tips:
+    put IMPLEMENT_TESTS() and RUN_TESTS() in a different file
+    and build that file separately as a different test artifact
+    - the tests and test data won't get linked into your main build
 
 */
 
