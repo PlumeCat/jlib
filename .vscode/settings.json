@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.tack": "rust",
         "*.xmacro": "cpp",
         "*.str": "rust",
         "array": "cpp",
@@ -75,6 +76,16 @@
         "map": "cpp",
         "unordered_set": "cpp",
         "filesystem": "cpp",
-        "version": "cpp"
+        "version": "cpp",
+        "hash_map": "cpp",
+        "*.tcc": "cpp",
+        "codecvt": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "random": "cpp",
+        "numbers": "cpp",
+        "set": "cpp",
+        "any": "cpp",
+        "list": "cpp"
     }
 }

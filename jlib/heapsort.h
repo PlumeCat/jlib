@@ -6,7 +6,7 @@
 #include <compare>
 #include <exception>
 
-#include <jlib/pushable_array.h>
+#include "static_stack.h"
 
 template<typename Type, typename Compare, typename Storage>
 struct heap {
@@ -16,11 +16,11 @@ struct heap {
     size_t get_count() const {
         return store.size();
     }
-    
+
     void swap_elements(size_t i1, size_t i2) {
         std::swap(store[i1], store[i2]);
     }
-    
+
     // push a new element to the heap
     void push(Type t) {
         store.emplace_back(t);
@@ -32,7 +32,7 @@ struct heap {
         if (get_count() == 0) {
             throw std::runtime_error("heap is empty");
         }
-        
+
         // return the top element
         auto top = store[0];
 
@@ -40,7 +40,7 @@ struct heap {
         swap_elements(get_count() - 1, 0);
         store.pop_back();
         sift_down(0);
-        
+
         return top;
     }
 
@@ -95,7 +95,7 @@ using dynamic_heap = heap<Type, Compare, std::vector<Type>>;
 
 // static heap
 template<typename Type, size_t N, typename Compare = std::greater<Type>>
-using static_heap  = heap<Type, Compare, pushable_array<Type, N>>;
+using static_heap  = heap<Type, Compare, static_stack<Type, N>>;
 
 // heapsort for array
 template<typename Type, size_t N, typename Compare = std::greater<Type>>

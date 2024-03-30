@@ -77,7 +77,7 @@ struct hash_map {
             return t;
         }
     };
-    
+
     // key, value, hash (before mod)
     using type = hash_map<Key, Value, HashFunc, EMPTY>;
     using kv_pair = std::pair<Key, Value>;
@@ -112,17 +112,17 @@ struct hash_map {
             insert(k, v);
         }
     }
-    
+
     // Iterators
     const_iterator begin() const { return { this, num_nodes ? first_node : NK }; }
     const_iterator end() const { return { this, NK }; }
     iterator begin() { return { this, num_nodes ? first_node : NK }; }
     iterator end() { return { this, NK }; }
-    
+
     // Size
     uint32_t size() const { return num_nodes; }
     bool empty() const { return size() == 0; }
-    
+
     // Clear
     void clear() {
         nodes.assign(nodes.size(), { { Key(), Value() }, EMPTY });
@@ -190,7 +190,7 @@ public:
             return nodes[insert(key, Value()).index].first.second;
         }
     }
-    
+
     Value& get(const Key& key) {
         auto iter = find(key);
         if (iter == end()) {
@@ -215,7 +215,7 @@ public:
     }
     // get value or return default value
     // will not insert default value into hash map
-    Value& get_or(const Key& key, const Value& default_value) {
+    Value get_or(const Key& key, const Value& default_value) {
         auto iter = find(key);
         if (iter == end()) {
             return default_value;
@@ -237,7 +237,6 @@ public:
             }
         }
 
-
         if (candidate == EMPTY) {
             // ran out of slots, rehash needed
             resize();
@@ -258,7 +257,7 @@ public:
         }
         iter->second = value;
     }
-    
+
     void remove(const Key& key) {
         auto iter = find(key);
         if (iter == end()) {

@@ -1,10 +1,12 @@
 // pushable_array.h
 #pragma once
 
+#include <cstddef>
 #include <array>
+#include <stdexcept>
 
 template<typename T, size_t N>
-struct pushable_array final : public std::array<T, N> {;
+struct static_stack final : public std::array<T, N> {;
     size_t count = 0;
 
     void push_back(const T& t) {

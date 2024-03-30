@@ -2,13 +2,15 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
+#include <limits>
+#include <stdexcept>
 #include <initializer_list>
 
 /*
 swiss_vector<T>
 
 a gap array. called "swiss" because it has holes in it like swiss cheese
-behaves.
 
 - constant-ish time inserts and removes, while reusing free space
 
@@ -16,45 +18,54 @@ behaves.
     but actually approaches linear as N -> ∞
 
 - never invalidates indices, "remove()" will leave a gap rather than shuffling/swapping
-    elements; 
-- invalidates pointers if "add()"
+    elements;
+- invalidates pointers iff:
+    * AllowResize
+    and
+    * add
 
 */
 
+#include <iostream>
 
 template<typename T, bool AllowResize = true>
 class swiss_vector {
-    template<class Iter, class Busy> struct iter_base {
-        Iter storage_iter;
-        Busy busy_iter;
-
-        T& operator*() { return *storage_iter; }
-        T* operator->() { return &(*storage_iter); }
-        bool operator != (const iter_base& i) const { return storage_iter != i.storage_iter; }
-        bool operator == (const iter_base& i) const { return storage_iter == i.storage_iter; }
-        iter_base& operator++()   {
-            while (!*busy_iter) {
-                storage_iter++;
-                busy_iter++;
-            }
-            return *this;
-        }
-        iter_base operator++(int) {
-            auto t = *this;
-            ++(*this);
-            return t;
-        }
-
-    };
-
 protected:
     std::vector<T> storage;
     std::vector<size_t> free_slots;
     std::vector<bool> is_busy;
 
 public:
-    using iterator = iter_base<decltype(storage.begin()), decltype(is_busy.begin())>;
-    using const_iterator = iter_base<decltype(storage.cbegin()), decltype(is_busy.cbegin())>;
+    using type = swiss_vector<T, AllowResize>;
+
+    template<typename Container, typename Deref>
+    struct iter {
+        using type = iter<Container, Deref>;
+        Container* container;
+        size_t index;
+
+        Deref& operator*() { return container->storage[index]; }
+        Deref* operator->() { return &container->storage[index]; }
+        bool operator != (const type& i) const {
+            return (container != i.container || index != i.index);
+        }
+        bool operator == (const type& i) const {
+            return (container == i.container && index == i.index);
+        }
+        type& operator++() {
+            auto c = container->storage.size();
+            while (index < c && !container->busy(++index));
+            return *this;
+        }
+        type operator++(int) {
+            auto t = *this;
+            ++(*this);
+            return t;
+        }
+    };
+
+    using iterator = iter<type, T>;
+    using const_iterator = iter<const type, const T>;
 
     swiss_vector() = delete;
     swiss_vector(const swiss_vector&) = default;
@@ -62,9 +73,10 @@ public:
     swiss_vector& operator=(const swiss_vector&) = default;
     swiss_vector& operator=(swiss_vector&&) = default;
 
-    swiss_vector(size_t capacity = 32) {
+    explicit swiss_vector(size_t capacity = 32) {
         is_busy.resize(capacity, false);
         storage.reserve(capacity);
+        free_slots.reserve(capacity);
     }
 
     // TODO: improve efficiency
@@ -102,14 +114,15 @@ public:
         return v;
     }
 
-    T* index_to_pointer(uint32_t index) {
+    T* index_to_pointer(size_t index) {
         return &storage[index];
     }
-    uint32_t pointer_to_index(T* ptr) {
+    size_t pointer_to_index(T* ptr) {
         return (ptr - storage.data()) / sizeof(T);
     }
 
-    uint32_t add(const T& value) {
+    // returns the index where the value was added
+    size_t add(const T& value) {
         if (free_slots.size()) {
             // use a free slot if possible to minimize gaps
             auto index = free_slots.back();
@@ -140,7 +153,9 @@ public:
             }
         }
     }
-    void remove(uint32_t index) {
+
+    // remove the value at that index, and mark that slot as available
+    void remove(size_t index) {
         // remove an element that isn't there does nothing
         if (is_busy[index]) {
             is_busy[index] = false;
@@ -158,36 +173,52 @@ public:
         is_busy.clear();
     }
 
-    // TODO: maybe? compressing feature: swap elemnents into free slots
-    // to improve locality -> improve iteration speed
-    // at the expense of invalidating some indices
-    void compactify(uint32_t max_swaps = std::numeric_limits<uint32_t>::max());
+    // swap [some of] the free slots to the end
+    // improves locality and iteration speed at the expense of invalidating some indices
+    // max_swaps = maximum number of swaps to perform (if -1, will compactify entirely)
+    void compactify(int32_t max_swaps = -1);
 
+    // get pointer to the raw data
     T* data() { return storage.data(); }
-    bool busy(uint32_t index) { return is_busy[index]; }
-    
-    // size of the internal vector
-    uint32_t internal_size() const { return storage.internal_size(); }
+
+    // inquires whether the given slot is busy
+    bool busy(size_t index) const { return is_busy[index]; }
 
     // the number of active elements
-    uint32_t count() const { return storage.size() - free_slots.size(); }
+    size_t size() const { return storage.size(); }
+    size_t count() const { return storage.size() - free_slots.size(); }
 
     // capacity of the internal vector; adding more than this number of
     // elements will invalidate pointers
-    uint32_t capacity() const { return storage.capacity(); }
+    size_t capacity() const { return storage.capacity(); }
 
+    // "begin" iterator contains the index of the first busy slot, or 0 if none
     iterator begin() {
-        return iterator { storage.begin(), is_busy.begin() };
+        return find_begin(iterator { this, 0 });
     }
-    const_iterator begin() const {
-        return const_iterator { storage.begin(), is_busy.begin() };
-    }
-    iterator end() {
-        return iterator { storage.end(), is_busy.end() };
-    }
-    const_iterator end() const {
-        return const_iterator { storage.begin(), is_busy.begin() };
+    const_iterator cbegin() const {
+        return find_begin(const_iterator { this, 0 });
     }
 
-    // uint32_t count; // number of active elements
+    // "end" iterator contains the index of the last busy slot + 1, or 0 if none
+    iterator end() {
+        return find_end(iterator { this, storage.size() });
+    }
+    const_iterator cend() const {
+        return find_end(const_iterator { this, storage.size() });
+    }
+
+private:
+    template<typename Iter>
+    Iter find_begin(Iter i) const {
+        auto c = storage.size();
+        while (i.index < c && !busy(i.index)) i.index++;
+        return i;
+    }
+
+    template<typename Iter>
+    Iter find_end(Iter i) const {
+        while (i.index > 0 && !busy(i.index-1)) i.index--;
+        return i;
+    }
 };

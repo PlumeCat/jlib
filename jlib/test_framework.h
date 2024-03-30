@@ -1,6 +1,5 @@
 #pragma once
 
-
 /*
 test framework
 only for super simple basic sanity checks (inline)
@@ -56,19 +55,22 @@ tips:
 
 #include <iostream>
 #include <vector>
+#include <filesystem>
 
-#include <jlib/terminal_color.h>
-#include <jlib/log.h>
+#include "jlib/terminal_color.h"
+#include "jlib/log.h"
 
 
 // util
+#ifndef paste
 #define paste(a, b) a##b
+#endif
 
 // asserts
-#define ASSERT(cond) if (!(cond)) { throw std::runtime_error("Assertion failed: " #cond); }
-#define ASSERT_THROWS(code) \
+#define ASSERT(...) if (!(__VA_ARGS__)) { throw std::runtime_error("Assertion failed: " #__VA_ARGS__); }
+#define ASSERT_THROWS(...) \
     do {\
-        try { code; }\
+        try { __VA_ARGS__; }\
         catch (...) { break; }\
         throw std::runtime_error("Should have thrown, didn't");\
     } while (0);\
@@ -79,14 +81,22 @@ struct TestBase;
 
 std::vector<TestBase*>& ALL_TESTS();
 int& ALL_TESTS_RESULT();
+bool& PRIORITY();
 
 struct TestBase {
     const char* msg;
     const char* file;
     int line;
 
-    inline TestBase(const char* msg, const char* file, int line):
+    inline TestBase(const char* msg, const char* file, int line, bool priority):
         msg(msg), file(file), line(line) {
+        if (PRIORITY()) {
+            return;
+        }
+        if (priority) {
+            ALL_TESTS().clear();
+            PRIORITY() = true;
+        }
         ALL_TESTS().push_back(this);
     }
     inline void operator()() {
@@ -105,7 +115,15 @@ struct TestBase {
         auto color = success ? Colors::FG_GREEN : Colors::FG_RED;
         auto message = success ? " success: " : " error: (test failed) ";
 
-        log<false, false>(file, ":", line, ":5:", color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : "");
+        // if running in VScode, do special formatting so it looks like GCC output
+        // this allows the user to double click a failing test to go to the source
+        if (auto env = std::getenv("TERM_PROGRAM"); env && env == std::string { "vscode" }) {
+            log<false, false>(file, ":", line, color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : "");
+        } else {
+            auto filename = std::filesystem::path(file).filename().string();
+            log<false, false>(Colors::FG_CYAN2, filename, ":", line, color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : "");
+        }
+
     }
 
     virtual void func() = 0;
@@ -121,15 +139,15 @@ struct StringLiteral {
 
 template<StringLiteral Filename, size_t Line>
 struct Test final : public TestBase {
-    Test(const char* msg): TestBase(msg, Filename.value, Line) {}
+    Test(const char* msg, bool just_me=false): TestBase(msg, Filename.value, Line, just_me) {}
     virtual void func() override;
 };
 
-#define TEST_(test_msg, file, line, counter)\
-    static auto paste(__test_, counter) = Test<file, line>(test_msg);\
+#define TEST_(file, line, counter, ...)\
+    static auto paste(__test_, counter) = Test<file, line>(__VA_ARGS__);\
     template<> void Test<file, line>::func()
 
-#define TEST(test_msg) TEST_(test_msg, __FILE__, __LINE__, __COUNTER__)
+#define TEST(...) TEST_(__FILE__, __LINE__, __COUNTER__, __VA_ARGS__)
 
 
 #define IMPLEMENT_TESTS()\
@@ -141,12 +159,16 @@ struct Test final : public TestBase {
         static auto result = 0;\
         return result;\
     }\
+    bool& PRIORITY() {\
+        static auto prio = false;\
+        return prio;\
+    }\
     void run_tests() {\
-        log(Colors::FG_YELLOW, "Running tests", Colors::FG_DEFAULT);\
+        log(Colors::FG_YELLOW2, "Running tests", Colors::FG_DEFAULT);\
         for (auto& t: ALL_TESTS()) {\
             (*t)();\
         }\
-        log(Colors::FG_YELLOW, "Tests complete", Colors::FG_DEFAULT);\
+        log(Colors::FG_YELLOW2, "Tests complete", Colors::FG_DEFAULT);\
     }
 
 #define RUN_TESTS() { run_tests(); return ALL_TESTS_RESULT(); }

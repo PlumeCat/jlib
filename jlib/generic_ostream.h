@@ -1,39 +1,48 @@
 #pragma once
 
 #include <ostream>
-#include <typeinfo>
 #include <tuple>
 
-// sfinae helpers
-#define DisableTemplate(candidate, disabled) \
-    typename = std::enable_if_t<!std::is_same_v<candidate, disabled>>
+template<typename T> concept OutputDefined = requires(std::ostream o, T t) { operator << (o, t); };
+template<typename T> concept OutputNotDefined = !OutputDefined<T>;
+template<typename T> concept ContainerOutputNotDefined = requires(T t) {
+    { t.size() } -> std::same_as<size_t>;
+    { t.cbegin() } -> std::same_as<typename T::const_iterator>;
+    { t.cend() } -> std::same_as<typename T::const_iterator>;
+} && OutputNotDefined<T>;
 
-// helper for pair<>
+// helper for pair<L, R> for std::*_map types
 template<typename L, typename R>
 std::ostream& operator << (std::ostream& o, const std::pair<L, R>& pair) {
     return o << "[ " << pair.first << ", " << pair.second << " ]";
 }
 
-// helper for tuple
+// helpers for tuple
+template<size_t N, typename ...Args>
+std::ostream& operator<<(std::ostream& o, const std::tuple<Args...>& t) {
+    o << std::get<N>(t);
+    if constexpr(N+1 < std::tuple_size<std::decay_t<decltype(t)>>::value) {
+        o << ", ";
+        ::operator<< <0>(o, t);
+    }
+    return o;
+}
 template<typename ...Args>
 std::ostream& operator<< (std::ostream& o, const std::tuple<Args...>& t){
     o << '(';
-    // std::tuple<Args...>::
+    ::operator<< <0>(o, t);
     return o << ')';
 }
 
-
 // you can output so many different types with this bad boy *slaps signature*
-template<template<typename...> typename Container, typename ...Args,
-    DisableTemplate(Container<Args...>, std::string),
-    DisableTemplate(Container<Args...>, std::stringstream)>
-std::ostream& operator << (std::ostream& o, const Container<Args...>& c) {
+std::ostream& operator << (std::ostream& o, ContainerOutputNotDefined auto c) {
+    // TODO: make it work for raw arrays?
     o << '{';
     if (c.size()) {
-        o << ' ' << *(c.begin());
-        auto i = c.begin();
-        i++;
-        for (; i != c.end(); i++) {
+        auto i = c.cbegin();
+        const auto end = c.cend();
+        o << ' ' << *i;
+        for (i++; i != end; i++) {
             o << ", " << *i;
         }
     }

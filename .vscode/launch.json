@@ -4,9 +4,10 @@
             "type": "lldb",
             "request": "launch",
             "name": "Launch",
-            "program": "${workspaceFolder}/build/Debug/jlib",
+            "program": "${workspaceFolder}/build/Debug/test_jlib",
             "preLaunchTask": "Build - Debug",
             "args": [],
+            "env": { "TERM_PROGRAM": "vscode" },
             "cwd": "${workspaceFolder}"
         }
     ]
