@@ -40,24 +40,23 @@ public:
 
     template<typename Container, typename Deref>
     struct iter {
-        using type = iter<Container, Deref>;
         Container* container;
         size_t index;
 
         Deref& operator*() { return container->storage[index]; }
         Deref* operator->() { return &container->storage[index]; }
-        bool operator != (const type& i) const {
+        bool operator != (const iter& i) const {
             return (container != i.container || index != i.index);
         }
-        bool operator == (const type& i) const {
+        bool operator == (const iter& i) const {
             return (container == i.container && index == i.index);
         }
-        type& operator++() {
+        iter& operator++() {
             auto c = container->storage.size();
             while (index < c && !container->busy(++index));
             return *this;
         }
-        type operator++(int) {
+        iter operator++(int) {
             auto t = *this;
             ++(*this);
             return t;
