@@ -15,8 +15,8 @@ bool write_binary_file(const std::string& fname, const std::vector<uint8_t>& dat
 
 #ifdef JLIB_IMPLEMENTATION
 
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 
 bool read_binary_file(const std::string& fname, std::vector<uint8_t>& out_data) {
     if (!std::filesystem::exists(fname)) {
@@ -38,7 +38,7 @@ bool write_binary_file(const std::string& fname, const std::vector<uint8_t>& dat
     if (!file.is_open()) {
         return false;
     }
-    file.write((const char*)data.data(), data.size());
+    file.write(reinterpret_cast<const char*>(data.data()), data.size());
     // TODO: check badbit/n written
     return true;
 }

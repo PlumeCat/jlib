@@ -2,21 +2,21 @@
 #include <jlib/log.h>
 #include <jlib/test_framework.h>
 
-#include <unordered_map>
-#include <unordered_set>
 #include <map>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 TEST("generic ostream maps and sets") {
     auto s = std::map<std::string, int> {
-        { "one", 1 },
-        { "two", 2 },
-        { "three", 3 }
+        {"one",    1},
+        { "two",   2},
+        { "three", 3}
     };
     auto t = std::unordered_map<std::string, int> { s.begin(), s.end() };
     auto u = std::set<std::string> {};
     auto v = std::unordered_set<std::string> {};
-    for (auto& [ k, _ ] : s) {
+    for (auto& [k, _] : s) {
         u.emplace(k);
         v.emplace(k);
     }
@@ -32,7 +32,8 @@ TEST("generic ostream maps and sets") {
 //     auto t = std::tuple { 1, "two", 3.f };
 //     log("simple tuple: ", t);
 //     log("tuple of tuple: ", std::tuple { std::tuple { 1, "two", 3.f }, std::tuple { 4, "five", 6.f } });
-//     log("deranged tuple: ", std::tuple { 1, "two", 3.f, std::array { 1, 2, 3 }, std::array { std::vector<float> { 1, 2, 3, 4.0 } } });
+//     log("deranged tuple: ", std::tuple { 1, "two", 3.f, std::array { 1, 2, 3 }, std::array { std::vector<float> { 1, 2, 3, 4.0 } }
+//     });
 // }
 
 #include <array>

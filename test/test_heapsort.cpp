@@ -6,12 +6,12 @@
 
 TEST("test static heapsort") {
     constexpr auto N = 1000;
-    auto input = std::array<uint32_t, N>{};
+    auto input = std::array<uint32_t, N> {};
     auto output = std::array<uint32_t, N> { { 0 } };
 
     // random inputs
     srand(time(nullptr));
-    for (auto& i: input) {
+    for (auto& i : input) {
         i = rand() % 100;
     }
 
@@ -19,12 +19,12 @@ TEST("test static heapsort") {
 
     // make sure output is in order
     for (auto i = 1; i < N; i++) {
-        ASSERT(output[i-1] >= output[i]);
+        ASSERT(output[i - 1] >= output[i]);
     }
 }
 
 TEST("pop empty heap") {
-    auto h = dynamic_heap<int>{};
+    auto h = dynamic_heap<int> {};
     ASSERT_THROWS(h.pop());
 }
 
@@ -41,12 +41,9 @@ TEST("test dynamic heapsort") {
     auto before = std::chrono::steady_clock::now();
     heapsort(input, output);
     auto after = std::chrono::steady_clock::now();
-    log("sorting took",
-        std::chrono::duration_cast<std::chrono::microseconds>(after - before).count() / 1000.f,
-        "ms"
-    );
+    log("sorting took", std::chrono::duration_cast<std::chrono::microseconds>(after - before).count() / 1000.f, "ms");
 
     for (auto i = 1; i < N; i++) {
-        ASSERT(output[i] <= output[i-1]);
+        ASSERT(output[i] <= output[i - 1]);
     }
 }

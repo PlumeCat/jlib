@@ -86,6 +86,7 @@
         "numbers": "cpp",
         "set": "cpp",
         "any": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "source_location": "cpp"
     }
 }

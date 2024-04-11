@@ -4,6 +4,8 @@
 
 - [ ] improve hash map
 
+- [ ] improve heap (constructors, forwarding emplace, etc etc)
+
 - [ ] parser combinators?
 
 - [ ] move task engine (v4 or v5) in here?

@@ -1,11 +1,13 @@
 #pragma once
 
-#include <string>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
+#include <string>
 
 // LineCallback signature: bool (*)(const std::string&)
-template<typename T> concept LineCallback = requires (T t) { { t(std::string{}) } -> std::same_as<bool>; };
+template<typename T> concept LineCallback = requires(T t) {
+    { t(std::string {}) } -> std::same_as<bool>;
+};
 
 // read text file
 // blockingly read the entire file in one go
@@ -28,7 +30,8 @@ bool read_text_file(const std::string& fname, LineCallback auto callback) {
     }
 
     auto line = std::string {};
-    while (std::getline(file, line) && callback(line));
+    while (std::getline(file, line) && callback(line))
+        ;
     return true;
 }
 

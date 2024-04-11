@@ -1,11 +1,11 @@
 // swiss_vector.h
 #pragma once
 
-#include <vector>
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
 #include <stdexcept>
-#include <initializer_list>
+#include <vector>
 
 /*
 swiss_vector<T>
@@ -28,8 +28,7 @@ a gap array. called "swiss" because it has holes in it like swiss cheese
 
 #include <iostream>
 
-template<typename T, bool AllowResize = true>
-class swiss_vector {
+template<typename T, bool AllowResize = true> class swiss_vector {
 protected:
     std::vector<T> storage;
     std::vector<size_t> free_slots;
@@ -38,22 +37,26 @@ protected:
 public:
     using type = swiss_vector<T, AllowResize>;
 
-    template<typename Container, typename Deref>
-    struct iter {
+    template<typename Container, typename Deref> struct iter {
         Container* container;
         size_t index;
 
-        Deref& operator*() { return container->storage[index]; }
-        Deref* operator->() { return &container->storage[index]; }
-        bool operator != (const iter& i) const {
+        Deref& operator*() {
+            return container->storage[index];
+        }
+        Deref* operator->() {
+            return &container->storage[index];
+        }
+        bool operator!=(const iter& i) const {
             return (container != i.container || index != i.index);
         }
-        bool operator == (const iter& i) const {
+        bool operator==(const iter& i) const {
             return (container == i.container && index == i.index);
         }
         iter& operator++() {
             auto c = container->storage.size();
-            while (index < c && !container->busy(++index));
+            while (index < c && !container->busy(++index))
+                ;
             return *this;
         }
         iter operator++(int) {
@@ -82,21 +85,20 @@ public:
     template<typename... Rest>
     swiss_vector(const std::initializer_list<Rest...>& elements):
         swiss_vector(elements.size()) {
-        for (const auto& e: elements) {
+        for (const auto& e : elements) {
             add(e);
         }
     }
 
     // TODO: improve efficiency
-    template<typename ...Rest>
-    swiss_vector(Rest... rest): swiss_vector(sizeof...(Rest)) {
+    template<typename... Rest>
+    swiss_vector(Rest... rest):
+        swiss_vector(sizeof...(Rest)) {
         add(rest...);
     }
 
-
     // TODO: improve efficiency
-    template<typename ...Rest>
-    void add(const T& value, const Rest& ...rest) {
+    template<typename... Rest> void add(const T& value, const Rest&... rest) {
         add(value);
         add(rest...);
     }
@@ -105,7 +107,7 @@ public:
     // TODO: improve efficiency
     std::vector<T> collect() {
         auto v = std::vector<T>();
-        for (auto i = 0; i < storage.size(); i++) {
+        for (auto i = 0u; i < storage.size(); i++) {
             if (is_busy[i]) {
                 v.emplace_back(storage[i]);
             }
@@ -178,18 +180,28 @@ public:
     void compactify(int32_t max_swaps = -1);
 
     // get pointer to the raw data
-    T* data() { return storage.data(); }
+    T* data() {
+        return storage.data();
+    }
 
     // inquires whether the given slot is busy
-    bool busy(size_t index) const { return is_busy[index]; }
+    bool busy(size_t index) const {
+        return is_busy[index];
+    }
 
     // the number of active elements
-    size_t size() const { return storage.size(); }
-    size_t count() const { return storage.size() - free_slots.size(); }
+    size_t size() const {
+        return storage.size();
+    }
+    size_t count() const {
+        return storage.size() - free_slots.size();
+    }
 
     // capacity of the internal vector; adding more than this number of
     // elements will invalidate pointers
-    size_t capacity() const { return storage.capacity(); }
+    size_t capacity() const {
+        return storage.capacity();
+    }
 
     // "begin" iterator contains the index of the first busy slot, or 0 if none
     iterator begin() {
@@ -208,16 +220,16 @@ public:
     }
 
 private:
-    template<typename Iter>
-    Iter find_begin(Iter i) const {
+    template<typename Iter> Iter find_begin(Iter i) const {
         auto c = storage.size();
-        while (i.index < c && !busy(i.index)) i.index++;
+        while (i.index < c && !busy(i.index))
+            i.index++;
         return i;
     }
 
-    template<typename Iter>
-    Iter find_end(Iter i) const {
-        while (i.index > 0 && !busy(i.index-1)) i.index--;
+    template<typename Iter> Iter find_end(Iter i) const {
+        while (i.index > 0 && !busy(i.index - 1))
+            i.index--;
         return i;
     }
 };
