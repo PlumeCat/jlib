@@ -38,7 +38,7 @@ void jenum_parse(const char *enum_def) {
 }
 
 TEST("jenum output") {
-    log<false>("TestEnum {\n\t",
+    log("TestEnum {\n\t",
         TestEnum::A, ",\n\t", TestEnum::B, ",\n\t", TestEnum::C, ",\n\t", TestEnum::D,
     "\n}");
 }

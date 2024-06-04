@@ -11,12 +11,6 @@ include_directories(${CMAKE_HOME_DIRECTORY})
 add_compile_definitions(ENABLE_TEST)
 
 # file(GLOB_RECURSE test_files test/*.cpp)
-file(GLOB_RECURSE test_files test/test.cpp
-    test/test_swiss_vector.cpp
-    # test/test_jenum.cpp
-    # test/*.cpp
-    # test/test_*.cpp
-    # test/test_defer.cpp
-)
+file(GLOB_RECURSE test_files    test/*.cpp)
 
 add_executable(test_${PROJECT_NAME} ${test_files})
