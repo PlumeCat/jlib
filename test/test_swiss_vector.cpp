@@ -1,6 +1,6 @@
+#include <jlib/generic_ostream.h>
 #include <jlib/swiss_vector.h>
 #include <jlib/test_framework.h>
-#include <jlib/generic_ostream.h>
 
 TEST("swiss_vector basics") {
     auto vec = swiss_vector<int> { 1, 2, 3, 4, 5 };
@@ -32,10 +32,14 @@ TEST("remove from middle, push two, size didn't change") {
 }
 
 // subclass that makes the free slots publicly accessible
-template<typename T> class sv2: public swiss_vector<T> {
+template<typename T> class sv2 : public swiss_vector<T> {
 public:
-    template<typename... R> sv2(R... r): swiss_vector<T>(r...) {}
-    std::vector<size_t>& get_free() { return this->free_slots; }
+    template<typename... R>
+    sv2(R... r):
+        swiss_vector<T>(r...) {}
+    std::vector<size_t>& get_free() {
+        return this->free_slots;
+    }
 };
 TEST("remove from end, free slots not used") {
     auto vec = sv2<int> { 1, 2, 3, 4, 5, 6 };
@@ -45,7 +49,7 @@ TEST("remove from end, free slots not used") {
 }
 
 TEST("swiss vector begin/end") {
-    auto vec = swiss_vector<int> { 1,2,3,4,5,6 };
+    auto vec = swiss_vector<int> { 1, 2, 3, 4, 5, 6 };
 
     ASSERT(vec.begin().index == 0);
     ASSERT(vec.end().index == 6);
@@ -70,7 +74,6 @@ TEST("swiss vector begin/end") {
     auto b = vec.begin().index;
     ASSERT(b == 3);
     ASSERT(vec.end().index == 4);
-
 }
 
 TEST("swiss_vector iteration") {

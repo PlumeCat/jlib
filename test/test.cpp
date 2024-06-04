@@ -4,6 +4,7 @@
 
 IMPLEMENT_TESTS()
 int main(int argc, char* argv[]) {
+    (void)argc, (void)argv;
     RUN_TESTS()
     return 0;
 }

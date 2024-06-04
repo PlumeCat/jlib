@@ -2,14 +2,13 @@
 #define _HEAPSORT_H
 
 #include <array>
-#include <vector>
 #include <compare>
 #include <exception>
+#include <vector>
 
 #include "static_stack.h"
 
-template<typename Type, typename Compare, typename Storage>
-struct heap {
+template<typename Type, typename Compare, typename Storage> struct heap {
     Storage store;
     Compare compare;
 
@@ -44,7 +43,6 @@ struct heap {
         return top;
     }
 
-
     // sift up the element at index until it satisfies heap condition (<= parent, >= child)
     // tail recursive with no destructore, compiler should optimize into loop
     void sift_up(size_t index) {
@@ -73,9 +71,7 @@ struct heap {
             return; // 0 child case
         } else if (child2_index <= get_count() - 1) {
             // 2 children; the larger child should sift up
-            next_index = compare(store[child1_index], store[child2_index])
-                ? child1_index
-                : child2_index;
+            next_index = compare(store[child1_index], store[child2_index]) ? child1_index : child2_index;
         }
 
         // compare with next_index
@@ -86,25 +82,23 @@ struct heap {
             sift_down(next_index);
         }
     }
-
 };
 
 // dynamic heap
-template<typename Type, typename Compare = std::greater<Type>>
-using dynamic_heap = heap<Type, Compare, std::vector<Type>>;
+template<typename Type, typename Compare = std::greater<Type>> using dynamic_heap = heap<Type, Compare, std::vector<Type>>;
 
 // static heap
 template<typename Type, size_t N, typename Compare = std::greater<Type>>
-using static_heap  = heap<Type, Compare, static_stack<Type, N>>;
+using static_heap = heap<Type, Compare, static_stack<Type, N>>;
 
 // heapsort for array
 template<typename Type, size_t N, typename Compare = std::greater<Type>>
 void heapsort(const std::array<Type, N>& input, std::array<Type, N>& output) {
-    auto h = static_heap<Type, N, Compare>{};
-    for (auto i: input) {
+    auto h = static_heap<Type, N, Compare> {};
+    for (auto i : input) {
         h.push(i);
     }
-    for (auto i = 0; i < N; i++) {
+    for (auto i = 0u; i < N; i++) {
         output[i] = h.pop();
     }
 }
@@ -112,14 +106,13 @@ void heapsort(const std::array<Type, N>& input, std::array<Type, N>& output) {
 // heapsort for vector
 template<typename Type, typename Compare = std::greater<Type>>
 void heapsort(const std::vector<Type>& input, std::vector<Type>& output) {
-    auto h = dynamic_heap<Type, Compare>{};
+    auto h = dynamic_heap<Type, Compare> {};
     for (auto& i : input) {
         h.push(i);
     }
-    for (auto& i : input) {
+    for (auto i = 0u; i < input.size(); i++) {
         output.emplace_back(h.pop());
     }
 }
-
 
 #endif
