@@ -16,10 +16,6 @@ template<typename Type, typename Compare, typename Storage> struct heap {
         return store.size();
     }
 
-    void swap_elements(size_t i1, size_t i2) {
-        std::swap(store[i1], store[i2]);
-    }
-
     // push a new element to the heap
     void push(Type t) {
         store.emplace_back(t);
@@ -41,6 +37,11 @@ template<typename Type, typename Compare, typename Storage> struct heap {
         sift_down(0);
 
         return top;
+    }
+
+private:
+    void swap_elements(size_t i1, size_t i2) {
+        std::swap(store[i1], store[i2]);
     }
 
     // sift up the element at index until it satisfies heap condition (<= parent, >= child)
