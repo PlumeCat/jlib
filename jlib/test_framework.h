@@ -155,6 +155,8 @@ template<StringLiteral Filename, size_t Line> struct Test final : public TestBas
 
 #define TEST(...) TEST_(__FILE__, __LINE__, __COUNTER__, __VA_ARGS__)
 
+#define CHECK(...) TEST_(__FILE__, __LINE__, __COUNTER__, #__VA_ARGS__) { ASSERT(__VA_ARGS__); }
+
 #define IMPLEMENT_TESTS()                                                                                                             \
     std::vector<TestBase*>& ALL_TESTS() {                                                                                             \
         static auto all_tests = std::vector<TestBase*> {};                                                                            \
@@ -185,6 +187,8 @@ template<StringLiteral Filename, size_t Line> struct Test final : public TestBas
 #else
 #define TEST_(msg, file, line, counter) static void paste(test_unused_, line)()
 #define TEST(msg) TEST_(msg, __FILE__, __LINE__, __COUNTER__)
+#define CHECK(cond)
+
 #define IMPLEMENT_TESTS()
 #define RUN_TESTS()
 #endif
