@@ -1,10 +1,12 @@
 #include <jlib/defer.h>
 #include <jlib/test_framework.h>
 
-TEST("defer") {
+TEST("defer")
+{
     int x = 1;
     {
-        defer {
+        defer
+        {
             x = 2;
         };
     }
@@ -12,10 +14,12 @@ TEST("defer") {
     ASSERT(x == 2);
 }
 
-TEST("defer cancel") {
+TEST("defer cancel")
+{
     int x = 1;
     {
-        auto d = defer_cancelable {
+        auto d = defer_cancelable
+        {
             x = 2;
         };
         d.cancel();

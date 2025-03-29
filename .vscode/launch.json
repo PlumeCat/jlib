@@ -7,7 +7,9 @@
             "program": "${workspaceFolder}/build/Debug/test_jlib",
             "preLaunchTask": "Build - Debug",
             "args": [],
-            "env": { "TERM_PROGRAM": "vscode" },
+            "env": {
+                "TERM_PROGRAM": "vscode"
+            },
             "cwd": "${workspaceFolder}"
         }
     ]

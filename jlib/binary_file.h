@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 // read binary file
@@ -18,7 +19,8 @@ bool write_binary_file(const std::string& fname, const std::vector<uint8_t>& dat
 #include <filesystem>
 #include <fstream>
 
-bool read_binary_file(const std::string& fname, std::vector<uint8_t>& out_data) {
+bool read_binary_file(const std::string& fname, std::vector<uint8_t>& out_data)
+{
     if (!std::filesystem::exists(fname)) {
         return false;
     }
@@ -33,7 +35,8 @@ bool read_binary_file(const std::string& fname, std::vector<uint8_t>& out_data) 
     return true;
 }
 
-bool write_binary_file(const std::string& fname, const std::vector<uint8_t>& data) {
+bool write_binary_file(const std::string& fname, const std::vector<uint8_t>& data)
+{
     auto file = std::ofstream(fname, std::ios::binary);
     if (!file.is_open()) {
         return false;

@@ -38,6 +38,7 @@ public:
     };
 };
 
-inline std::ostream& operator<<(std::ostream& o, Colors::Codes c) {
+inline std::ostream& operator<<(std::ostream& o, Colors::Codes c)
+{
     return o << "\033[" << int(c) << 'm';
 }

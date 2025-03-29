@@ -23,10 +23,14 @@ struct log_pad {
 std::ostream& operator<<(std::ostream& o, const uint8_t& arg);
 std::ostream& operator<<(std::ostream& o, const log_pad& align);
 
-template<bool Space, typename Arg> std::ostream& log_stream(std::ostream& o, Arg arg) {
+template <bool Space, typename Arg>
+std::ostream& log_stream(std::ostream& o, Arg arg)
+{
     return o << arg;
 }
-template<bool Space, typename First, typename... Args> std::ostream& log_stream(std::ostream& o, First first, Args... args) {
+template <bool Space, typename First, typename... Args>
+std::ostream& log_stream(std::ostream& o, First first, Args... args)
+{
     log_stream<Space>(o, first);
     if constexpr (Space && !std::is_same_v<First, Colors::Codes>) {
         o << ' ';
@@ -35,7 +39,9 @@ template<bool Space, typename First, typename... Args> std::ostream& log_stream(
     return o;
 }
 
-template<bool Space = true, bool Prefix = false, typename... Args> void log(Args... args) {
+template <bool Space = true, bool Prefix = false, typename... Args>
+void log(Args... args)
+{
     auto s = std::ostringstream {};
     if constexpr (Prefix) {
         log_stream<Space>(s, "LOG:", args..., '\n');
@@ -50,10 +56,12 @@ template<bool Space = true, bool Prefix = false, typename... Args> void log(Args
 }
 
 #ifdef JLIB_IMPLEMENTATION
-std::ostream& operator<<(std::ostream& o, const uint8_t& arg) {
+std::ostream& operator<<(std::ostream& o, const uint8_t& arg)
+{
     return o << (int)arg;
 }
-std::ostream& operator<<(std::ostream& o, const log_pad& align) {
+std::ostream& operator<<(std::ostream& o, const log_pad& align)
+{
     auto pos = o.tellp() - std::streampos { 0 };
     while (pos++ < (decltype(pos))align.n) {
         o << align.ch;

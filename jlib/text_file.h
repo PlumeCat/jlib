@@ -5,7 +5,8 @@
 #include <string>
 
 // LineCallback signature: bool (*)(const std::string&)
-template<typename T> concept LineCallback = requires(T t) {
+template <typename T>
+concept LineCallback = requires(T t) {
     { t(std::string {}) } -> std::same_as<bool>;
 };
 
@@ -20,7 +21,8 @@ bool read_text_file(const std::string& fname, std::string& out_data);
 // returns false if file couldn't be opened or read; true otherwise
 // callback should have signature bool(*)(const std::string&);
 // return false from the callback to stop reading any more lines
-bool read_text_file(const std::string& fname, LineCallback auto callback) {
+bool read_text_file(const std::string& fname, LineCallback auto callback)
+{
     if (!std::filesystem::exists(fname)) {
         return false;
     }
@@ -42,7 +44,8 @@ bool write_text_file(const std::string& fname, const std::string& data);
 
 #ifdef JLIB_IMPLEMENTATION
 
-bool read_text_file(const std::string& fname, std::string& out_data) {
+bool read_text_file(const std::string& fname, std::string& out_data)
+{
     if (!std::filesystem::exists(fname)) {
         return false;
     }
@@ -57,7 +60,8 @@ bool read_text_file(const std::string& fname, std::string& out_data) {
     return true;
 }
 
-bool write_text_file(const std::string& fname, const std::string& data) {
+bool write_text_file(const std::string& fname, const std::string& data)
+{
     auto file = std::ofstream(fname);
     if (!file.is_open()) {
         return false;

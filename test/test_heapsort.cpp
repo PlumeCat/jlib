@@ -4,7 +4,8 @@
 #include <chrono>
 #include <vector>
 
-TEST("test static heapsort") {
+TEST("test static heapsort")
+{
     constexpr auto N = 1000;
     auto input = std::array<uint32_t, N> {};
     auto output = std::array<uint32_t, N> { { 0 } };
@@ -23,12 +24,14 @@ TEST("test static heapsort") {
     }
 }
 
-TEST("pop empty heap") {
+TEST("pop empty heap")
+{
     auto h = dynamic_heap<int> {};
     ASSERT_THROWS(h.pop());
 }
 
-TEST("test dynamic heapsort") {
+TEST("test dynamic heapsort")
+{
     constexpr auto N = 10000;
     auto input = std::vector<uint32_t>();
     auto output = std::vector<uint32_t>();

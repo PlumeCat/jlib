@@ -60,52 +60,51 @@ tips:
 #include "log.h"
 #include "terminal_color.h"
 
+using namespace std::literals;
+
 // util
 #ifndef paste
 #define paste(a, b) a##b
 #endif
 
 // asserts
-#define ASSERT(...)                                                                                                                   \
-    if (!(__VA_ARGS__)) {                                                                                                             \
-        throw std::runtime_error("Assertion failed: " #__VA_ARGS__);                                                                  \
+#define ASSERT(...)                                                  \
+    if (!(__VA_ARGS__)) {                                            \
+        throw std::runtime_error("Assertion failed: " #__VA_ARGS__); \
     }
-#define ASSERT_THROWS(...)                                                                                                            \
-    do {                                                                                                                              \
-        try {                                                                                                                         \
-            __VA_ARGS__;                                                                                                              \
-        } catch (...) {                                                                                                               \
-            break;                                                                                                                    \
-        }                                                                                                                             \
-        throw std::runtime_error("Should have thrown, didn't");                                                                       \
+#define ASSERT_THROWS(...)                                                        \
+    do {                                                                          \
+        try {                                                                     \
+            __VA_ARGS__;                                                          \
+        } catch (...) {                                                           \
+            break;                                                                \
+        }                                                                         \
+        throw std::runtime_error("Should have thrown but didn't: " #__VA_ARGS__); \
     } while (0);
+
+
+
 
 #ifdef ENABLE_TEST
 struct TestBase;
 
 std::vector<TestBase*>& ALL_TESTS();
 int& ALL_TESTS_RESULT();
-bool& PRIORITY();
 
 struct TestBase {
     const char* msg;
     const char* file;
     int line;
 
-    inline TestBase(const char* msg, const char* file, int line, bool priority):
-        msg(msg),
-        file(file),
-        line(line) {
-        if (PRIORITY()) {
-            return;
-        }
-        if (priority) {
-            ALL_TESTS().clear();
-            PRIORITY() = true;
-        }
+    inline TestBase(const char* msg, const char* file, int line)
+        : msg(msg)
+        , file(file)
+        , line(line)
+    {
         ALL_TESTS().push_back(this);
     }
-    inline void operator()() {
+    inline void operator()()
+    {
         try {
             // log("Running test: ", msg);
             func();
@@ -116,72 +115,83 @@ struct TestBase {
         }
     }
 
-    inline void report(bool success, const char* error) {
+    inline void report(bool success, const char* error)
+    {
         // Format like GCC error messages so the visual studio code build configuration can click through to failing tests
         auto color = success ? Colors::FG_GREEN : Colors::FG_RED;
         auto message = success ? " success: " : " error: (test failed) ";
 
         // if running in VScode, do special formatting so it looks like GCC output
         // this allows the user to double click a failing test to go to the source
-        if (auto env = std::getenv("TERM_PROGRAM"); env && env == std::string { "vscode" }) {
+        if (auto env = std::getenv("TERM_PROGRAM"); env && env == "vscode"sv) {
             log<false, false>(file, ":", line, color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : "");
         } else {
             auto filename = std::filesystem::path(file).filename().string();
             log<false, false>(
-                Colors::FG_CYAN2, filename, ":", line, color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : ""
-            );
+                Colors::FG_CYAN2, filename, ":", line, color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : "");
         }
     }
 
     virtual void func() = 0;
 };
 
-template<size_t N> struct StringLiteral {
-    constexpr StringLiteral(const char (&str)[N]) {
+template <size_t N>
+struct StringLiteral {
+    constexpr StringLiteral(const char (&str)[N])
+    {
         std::copy_n(str, N, value);
     }
     char value[N];
 };
 
-template<StringLiteral Filename, size_t Line> struct Test final : public TestBase {
-    Test(const char* msg, bool just_me = false):
-        TestBase(msg, Filename.value, Line, just_me) {}
+template <StringLiteral Filename, size_t Line>
+struct Test final : public TestBase {
+    Test(const char* msg)
+        : TestBase(msg, Filename.value, Line)
+    {
+    }
     virtual void func() override;
 };
 
-#define TEST_(file, line, counter, ...)                                                                                               \
-    static auto paste(__test_, counter) = Test<file, line>(__VA_ARGS__);                                                              \
-    template<> void Test<file, line>::func()
+#define TEST_(file, line, counter, ...)                                  \
+    static auto paste(__test_, counter) = Test<file, line>(__VA_ARGS__); \
+    template <>                                                          \
+    void Test<file, line>::func()
 
 #define TEST(...) TEST_(__FILE__, __LINE__, __COUNTER__, __VA_ARGS__)
 
-#define CHECK(...) TEST_(__FILE__, __LINE__, __COUNTER__, #__VA_ARGS__) { ASSERT(__VA_ARGS__); }
-
-#define IMPLEMENT_TESTS()                                                                                                             \
-    std::vector<TestBase*>& ALL_TESTS() {                                                                                             \
-        static auto all_tests = std::vector<TestBase*> {};                                                                            \
-        return all_tests;                                                                                                             \
-    }                                                                                                                                 \
-    int& ALL_TESTS_RESULT() {                                                                                                         \
-        static auto result = 0;                                                                                                       \
-        return result;                                                                                                                \
-    }                                                                                                                                 \
-    bool& PRIORITY() {                                                                                                                \
-        static auto prio = false;                                                                                                     \
-        return prio;                                                                                                                  \
-    }                                                                                                                                 \
-    void run_tests() {                                                                                                                \
-        log(Colors::FG_YELLOW2, "Running tests", Colors::FG_DEFAULT);                                                                 \
-        for (auto& t : ALL_TESTS()) {                                                                                                 \
-            (*t)();                                                                                                                   \
-        }                                                                                                                             \
-        log(Colors::FG_YELLOW2, "Tests complete", Colors::FG_DEFAULT);                                                                \
+#define CHECK(...)                                       \
+    TEST_(__FILE__, __LINE__, __COUNTER__, #__VA_ARGS__) \
+    {                                                    \
+        ASSERT(__VA_ARGS__);                             \
     }
 
-#define RUN_TESTS()                                                                                                                   \
-    {                                                                                                                                 \
-        run_tests();                                                                                                                  \
-        return ALL_TESTS_RESULT();                                                                                                    \
+#define IMPLEMENT_TESTS()                                                                       \
+    std::vector<TestBase*>& ALL_TESTS()                                                         \
+    {                                                                                           \
+        static auto all_tests = std::vector<TestBase*> {};                                      \
+        return all_tests;                                                                       \
+    }                                                                                           \
+    int& ALL_TESTS_RESULT()                                                                     \
+    {                                                                                           \
+        static auto result = 0;                                                                 \
+        return result;                                                                          \
+    }                                                                                           \
+    void run_tests(std::string_view filter = "")                                                \
+    {                                                                                           \
+        log(Colors::FG_YELLOW2, "Running tests", Colors::FG_DEFAULT, filter);                   \
+        for (auto& t : ALL_TESTS()) {                                                           \
+            /*log(std::filesystem::path(t->file), std::filesystem::path(t->file).filename());*/ \
+            if (std::filesystem::path(t->file).stem() == filter)                                \
+                (*t)();                                                                         \
+        }                                                                                       \
+        log(Colors::FG_YELLOW2, "Tests complete", Colors::FG_DEFAULT);                          \
+    }
+
+#define RUN_TESTS(filter)          \
+    {                              \
+        run_tests(filter);         \
+        return ALL_TESTS_RESULT(); \
     }
 
 #else

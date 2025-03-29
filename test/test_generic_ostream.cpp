@@ -2,16 +2,22 @@
 #include <jlib/log.h>
 #include <jlib/test_framework.h>
 
+#include <array>
+#include <deque>
+#include <list>
 #include <map>
 #include <set>
+#include <stack>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
-TEST("generic ostream maps and sets") {
+TEST("generic ostream maps and sets")
+{
     auto s = std::map<std::string, int> {
-        {"one",    1},
-        { "two",   2},
-        { "three", 3}
+        { "one", 1 },
+        { "two", 2 },
+        { "three", 3 }
     };
     auto t = std::unordered_map<std::string, int> { s.begin(), s.end() };
     auto u = std::set<std::string> {};
@@ -36,18 +42,15 @@ TEST("generic ostream maps and sets") {
 //     });
 // }
 
-#include <array>
-#include <list>
-#include <vector>
-TEST("generic ostream list/array/vector") {
+TEST("generic ostream list/array/vector")
+{
     log(std::list { 1, 2, 3, 4, 5 });
     log(std::array { 1, 2, 3, 4, 5 });
     log(std::vector { 1, 2, 3, 4, 5 });
 }
 
-#include <deque>
-#include <stack>
-TEST("generic ostream deque") {
+TEST("generic ostream deque")
+{
     log(std::deque { 1, 2, 3, 4, 5 });
 }
 

@@ -1,6 +1,7 @@
 #include <jlib/test_framework.h>
 
-TEST("terminal colours") {
+TEST("terminal colours")
+{
     log(Colors::FG_BLACK, "FG_BLACK");
     log(Colors::FG_RED, "FG_RED");
     log(Colors::FG_GREEN, "FG_GREEN");

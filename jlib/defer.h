@@ -2,21 +2,30 @@
 
 // Limitations: Can't throw exceptions from a deferred block, as it is implemented with destructors
 
-template <typename T> struct deferred {
+template <typename T>
+struct deferred {
     T func;
     bool cancel_;
-    deferred(T f): func(f), cancel_(false) {}
-    ~deferred() {
+    deferred(T f)
+        : func(f)
+        , cancel_(false)
+    {
+    }
+    ~deferred()
+    {
         if (!cancel_) {
             func();
         }
     }
-    void cancel() {
+    void cancel()
+    {
         cancel_ = true;
     }
 };
-struct defer_dummy {};
-template <typename F> deferred<F> operator<<(defer_dummy, F f) {
+struct defer_dummy { };
+template <typename F>
+deferred<F> operator<<(defer_dummy, F f)
+{
     return deferred<F>(f);
 }
 #ifndef paste

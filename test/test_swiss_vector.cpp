@@ -2,7 +2,8 @@
 #include <jlib/swiss_vector.h>
 #include <jlib/test_framework.h>
 
-TEST("swiss_vector basics") {
+TEST("swiss_vector basics")
+{
     auto vec = swiss_vector<int> { 1, 2, 3, 4, 5 };
     vec.add(1);
     vec.add(2);
@@ -11,7 +12,8 @@ TEST("swiss_vector basics") {
     ASSERT(vec.collect() == std::vector<int>({ 1, 2, 3, 4, 5, 1, 2, 3 }));
 }
 
-TEST("swiss vector with some removes") {
+TEST("swiss vector with some removes")
+{
     auto vec = swiss_vector<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
     vec.remove(3);
     vec.remove(6);
@@ -22,7 +24,8 @@ TEST("swiss vector with some removes") {
     ASSERT(vec.collect() == std::vector<int>({ 1, 2, 3, 5, 6, 32, 64, 9, 10 })); //
 }
 
-TEST("remove from middle, push two, size didn't change") {
+TEST("remove from middle, push two, size didn't change")
+{
     auto vec = swiss_vector<int> { 1, 2, 3, 4, 5 };
     vec.remove(2);
     vec.remove(3);
@@ -32,23 +35,29 @@ TEST("remove from middle, push two, size didn't change") {
 }
 
 // subclass that makes the free slots publicly accessible
-template<typename T> class sv2 : public swiss_vector<T> {
+template <typename T>
+class sv2 : public swiss_vector<T> {
 public:
-    template<typename... R>
-    sv2(R... r):
-        swiss_vector<T>(r...) {}
-    std::vector<size_t>& get_free() {
+    template <typename... R>
+    sv2(R... r)
+        : swiss_vector<T>(r...)
+    {
+    }
+    std::vector<size_t>& get_free()
+    {
         return this->free_slots;
     }
 };
-TEST("remove from end, free slots not used") {
+TEST("remove from end, free slots not used")
+{
     auto vec = sv2<int> { 1, 2, 3, 4, 5, 6 };
     vec.remove(5);
     vec.remove(4);
     ASSERT(vec.get_free().size() == 0);
 }
 
-TEST("swiss vector begin/end") {
+TEST("swiss vector begin/end")
+{
     auto vec = swiss_vector<int> { 1, 2, 3, 4, 5, 6 };
 
     ASSERT(vec.begin().index == 0);
@@ -76,7 +85,8 @@ TEST("swiss vector begin/end") {
     ASSERT(vec.end().index == 4);
 }
 
-TEST("swiss_vector iteration") {
+TEST("swiss_vector iteration")
+{
     auto vec = swiss_vector<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
     // make some gaps

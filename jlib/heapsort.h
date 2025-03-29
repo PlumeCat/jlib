@@ -8,22 +8,26 @@
 
 #include "static_stack.h"
 
-template<typename Type, typename Compare, typename Storage> struct heap {
+template <typename Type, typename Compare, typename Storage>
+struct heap {
     Storage store;
     Compare compare;
 
-    size_t get_count() const {
+    size_t get_count() const
+    {
         return store.size();
     }
 
     // push a new element to the heap
-    void push(Type t) {
+    void push(Type t)
+    {
         store.emplace_back(t);
         sift_up(get_count() - 1);
     }
 
     // pop an element
-    Type pop() {
+    Type pop()
+    {
         if (get_count() == 0) {
             throw std::runtime_error("heap is empty");
         }
@@ -40,13 +44,15 @@ template<typename Type, typename Compare, typename Storage> struct heap {
     }
 
 private:
-    void swap_elements(size_t i1, size_t i2) {
+    void swap_elements(size_t i1, size_t i2)
+    {
         std::swap(store[i1], store[i2]);
     }
 
     // sift up the element at index until it satisfies heap condition (<= parent, >= child)
     // tail recursive with no destructore, compiler should optimize into loop
-    void sift_up(size_t index) {
+    void sift_up(size_t index)
+    {
         if (index >= get_count() || index == 0) {
             return;
         }
@@ -60,7 +66,8 @@ private:
 
     // sift down the element at index until it satisfies heap condition (<= parent, >= child)
     // tail recursive with no destructors, compiler should optimize into loop
-    void sift_down(size_t index) {
+    void sift_down(size_t index)
+    {
         if (index >= get_count()) {
             return;
         }
@@ -86,15 +93,17 @@ private:
 };
 
 // dynamic heap
-template<typename Type, typename Compare = std::greater<Type>> using dynamic_heap = heap<Type, Compare, std::vector<Type>>;
+template <typename Type, typename Compare = std::greater<Type>>
+using dynamic_heap = heap<Type, Compare, std::vector<Type>>;
 
 // static heap
-template<typename Type, size_t N, typename Compare = std::greater<Type>>
+template <typename Type, size_t N, typename Compare = std::greater<Type>>
 using static_heap = heap<Type, Compare, static_stack<Type, N>>;
 
 // heapsort for array
-template<typename Type, size_t N, typename Compare = std::greater<Type>>
-void heapsort(const std::array<Type, N>& input, std::array<Type, N>& output) {
+template <typename Type, size_t N, typename Compare = std::greater<Type>>
+void heapsort(const std::array<Type, N>& input, std::array<Type, N>& output)
+{
     auto h = static_heap<Type, N, Compare> {};
     for (auto i : input) {
         h.push(i);
@@ -105,8 +114,9 @@ void heapsort(const std::array<Type, N>& input, std::array<Type, N>& output) {
 }
 
 // heapsort for vector
-template<typename Type, typename Compare = std::greater<Type>>
-void heapsort(const std::vector<Type>& input, std::vector<Type>& output) {
+template <typename Type, typename Compare = std::greater<Type>>
+void heapsort(const std::vector<Type>& input, std::vector<Type>& output)
+{
     auto h = dynamic_heap<Type, Compare> {};
     for (auto& i : input) {
         h.push(i);
