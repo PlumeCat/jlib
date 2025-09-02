@@ -1,15 +1,19 @@
 #pragma once
 
 #include <ostream>
+#include <string>
 #include <tuple>
 
-template <typename T> concept OutputDefined = requires(std::ostream o, T t) { operator<<(o, t); };
-template <typename T> concept OutputNotDefined = !OutputDefined<T>;
-template <typename T> concept ContainerOutputNotDefined = requires(T t) {
-    { t.size() } -> std::same_as<size_t>;
+template <typename T> concept Container = requires(T t) {
     { t.cbegin() } -> std::same_as<typename T::const_iterator>;
     { t.cend() } -> std::same_as<typename T::const_iterator>;
-} && OutputNotDefined<T>;
+};
+
+template<typename T> concept NotString = (
+    not (std::same_as<std::remove_cvref_t<T>, std::string> || std::same_as<std::remove_cvref_t<T>, std::string_view>)
+);
+
+template<typename T> concept NotStringContainer = (NotString<T> && Container<T>);
 
 // helper for pair<L, R> for std::*_map types
 template <typename L, typename R> std::ostream& operator<<(std::ostream& o, const std::pair<L, R>& pair) {
@@ -31,17 +35,14 @@ template <typename... Args> std::ostream& operator<<(std::ostream& o, const std:
     return o << ')';
 }
 
-// you can output so many different types with this bad boy *slaps signature*
-std::ostream& operator<<(std::ostream& o, ContainerOutputNotDefined auto c) {
+template<NotStringContainer T> std::ostream& operator<<(std::ostream& o, T& c) {
     // TODO: make it work for raw arrays?
     o << '{';
-    if (c.size()) {
-        auto i = c.cbegin();
-        const auto end = c.cend();
+    auto i = c.cbegin();
+    const auto e = c.cend();
+    if (i != e) {
         o << ' ' << *i;
-        for (i++; i != end; i++) {
-            o << ", " << *i;
-        }
+        for (i++; i != e; i++) { o << ", " << *i; }
     }
     return o << " }";
 }

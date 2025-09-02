@@ -1,11 +1,31 @@
-#include <jlib/generic_ostream.h>
-#include <jlib/log.h>
-#include <jlib/test_framework.h>
+#include "jlib/generic_ostream.h"
+#include "jlib/log.h"
+#include "jlib/test_framework.h"
 
+#include <list>
+#include <array>
+#include <vector>
+#include <deque>
 #include <map>
-#include <set>
 #include <unordered_map>
+#include <tuple>
+#include <set>
 #include <unordered_set>
+
+using namespace std::literals;
+
+
+TEST("logging log_pad") {
+    log(log_pad{10}, "hello world");
+    log(log_pad{20}, "hello world");
+}
+
+TEST("log quote") {
+    auto hello_world = "hello world";
+    log(1, quote{} | hello_world);
+    log(2, QUOTE hello_world);
+}
+
 
 TEST("generic ostream maps and sets") {
     auto s = std::map<std::string, int> {
@@ -36,19 +56,18 @@ TEST("generic ostream maps and sets") {
 //     });
 // }
 
-#include <array>
-#include <list>
-#include <vector>
 TEST("generic ostream list/array/vector") {
     log(std::list { 1, 2, 3, 4, 5 });
     log(std::array { 1, 2, 3, 4, 5 });
     log(std::vector { 1, 2, 3, 4, 5 });
 }
 
-#include <deque>
-#include <stack>
 TEST("generic ostream deque") {
     log(std::deque { 1, 2, 3, 4, 5 });
+}
+
+TEST("generic ostream tuple") {
+    log(std::tuple { 1, 2.0, "hello"s });
 }
 
 // TODO: maybe try and support tuple, optional, any, variant, queue, stack

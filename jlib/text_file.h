@@ -13,18 +13,18 @@ template<typename T> concept LineCallback = requires(T t) {
 // blockingly read the entire file in one go
 // returns false if file couldn't be opened or read; true otherwise
 // out_data is overwritten and resized once to fit the entire file
-bool read_text_file(const std::string& fname, std::string& out_data);
+bool read_text_file(const std::filesystem::path& path, std::string& out_data);
 
 // read text file
 // read sequentially line by line and call the callback once for each line
 // returns false if file couldn't be opened or read; true otherwise
 // callback should have signature bool(*)(const std::string&);
 // return false from the callback to stop reading any more lines
-bool read_text_file(const std::string& fname, LineCallback auto callback) {
-    if (!std::filesystem::exists(fname)) {
+bool read_text_file(const std::filesystem::path& path, LineCallback auto callback) {
+    if (!std::filesystem::exists(path)) {
         return false;
     }
-    auto file = std::ifstream(fname);
+    auto file = std::ifstream(path);
     if (!file.is_open()) {
         return false;
     }
@@ -38,16 +38,16 @@ bool read_text_file(const std::string& fname, LineCallback auto callback) {
 // write text file
 // blockingly write the whole file in one go
 // returns true if all data was successfully written; false otherwise
-bool write_text_file(const std::string& fname, const std::string& data);
+bool write_text_file(const std::filesystem::path& path, const std::string& data);
 
 #ifdef JLIB_IMPLEMENTATION
 
-bool read_text_file(const std::string& fname, std::string& out_data) {
-    if (!std::filesystem::exists(fname)) {
+bool read_text_file(const std::filesystem::path& path, std::string& out_data) {
+    if (!std::filesystem::exists(path)) {
         return false;
     }
-    auto length = std::filesystem::file_size(fname);
-    auto file = std::ifstream(fname);
+    auto length = std::filesystem::file_size(path);
+    auto file = std::ifstream(path);
     if (!file.is_open()) {
         return false;
     }
@@ -57,8 +57,8 @@ bool read_text_file(const std::string& fname, std::string& out_data) {
     return true;
 }
 
-bool write_text_file(const std::string& fname, const std::string& data) {
-    auto file = std::ofstream(fname);
+bool write_text_file(const std::filesystem::path& path, const std::string& data) {
+    auto file = std::ofstream(path);
     if (!file.is_open()) {
         return false;
     }

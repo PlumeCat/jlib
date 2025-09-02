@@ -54,6 +54,7 @@ tips:
 */
 
 #include <filesystem>
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -84,35 +85,26 @@ tips:
 struct TestBase;
 
 std::vector<TestBase*>& ALL_TESTS();
-int& ALL_TESTS_RESULT();
-bool& PRIORITY();
 
 struct TestBase {
     const char* msg;
     const char* file;
     int line;
 
-    inline TestBase(const char* msg, const char* file, int line, bool priority):
+    inline TestBase(const char* msg, const char* file, int line):
         msg(msg),
         file(file),
         line(line) {
-        if (PRIORITY()) {
-            return;
-        }
-        if (priority) {
-            ALL_TESTS().clear();
-            PRIORITY() = true;
-        }
         ALL_TESTS().push_back(this);
     }
-    inline void operator()() {
+    inline bool operator()() {
         try {
-            // log("Running test: ", msg);
             func();
-            // log("...Done");
             report(true, nullptr);
+            return true;
         } catch (std::exception& e) {
             report(false, e.what());
+            return false;
         }
     }
 
@@ -142,53 +134,52 @@ template<size_t N> struct StringLiteral {
     }
     char value[N];
 };
-
 template<StringLiteral Filename, size_t Line> struct Test final : public TestBase {
-    Test(const char* msg, bool just_me = false):
-        TestBase(msg, Filename.value, Line, just_me) {}
+    Test(const char* msg):
+        TestBase(msg, Filename.value, Line) {}
     virtual void func() override;
 };
 
 #define TEST_(file, line, counter, ...)                                                                                               \
     static auto paste(__test_, counter) = Test<file, line>(__VA_ARGS__);                                                              \
     template<> void Test<file, line>::func()
-
 #define TEST(...) TEST_(__FILE__, __LINE__, __COUNTER__, __VA_ARGS__)
-
 #define CHECK(...) TEST_(__FILE__, __LINE__, __COUNTER__, #__VA_ARGS__) { ASSERT(__VA_ARGS__); }
 
-#define IMPLEMENT_TESTS()                                                                                                             \
-    std::vector<TestBase*>& ALL_TESTS() {                                                                                             \
-        static auto all_tests = std::vector<TestBase*> {};                                                                            \
-        return all_tests;                                                                                                             \
-    }                                                                                                                                 \
-    int& ALL_TESTS_RESULT() {                                                                                                         \
-        static auto result = 0;                                                                                                       \
-        return result;                                                                                                                \
-    }                                                                                                                                 \
-    bool& PRIORITY() {                                                                                                                \
-        static auto prio = false;                                                                                                     \
-        return prio;                                                                                                                  \
-    }                                                                                                                                 \
-    void run_tests() {                                                                                                                \
-        log(Colors::FG_YELLOW2, "Running tests", Colors::FG_DEFAULT);                                                                 \
-        for (auto& t : ALL_TESTS()) {                                                                                                 \
-            (*t)();                                                                                                                   \
-        }                                                                                                                             \
-        log(Colors::FG_YELLOW2, "Tests complete", Colors::FG_DEFAULT);                                                                \
-    }
-
-#define RUN_TESTS()                                                                                                                   \
-    {                                                                                                                                 \
-        run_tests();                                                                                                                  \
-        return ALL_TESTS_RESULT();                                                                                                    \
-    }
-
 #else
-#define TEST_(msg, file, line, counter) static void paste(test_unused_, line)()
-#define TEST(msg) TEST_(msg, __FILE__, __LINE__, __COUNTER__)
-#define CHECK(cond)
-
-#define IMPLEMENT_TESTS()
+#define TEST(...)
+#define CHECK(...)
 #define RUN_TESTS()
+#endif
+
+
+
+#ifdef JLIB_TEST_IMPLEMENTATION
+
+std::vector<TestBase*>& ALL_TESTS() {
+    static auto all_tests = std::vector<TestBase*> {};
+    return all_tests;
+}
+int run_tests(const std::vector<std::string_view>& subset) {
+    log(Colors::FG_YELLOW2, "Running tests", Colors::FG_DEFAULT);
+    auto passed = 0;
+
+    // if a subset is passed, remove tests not in the subset
+    if (subset.size()) {
+        std::erase_if(ALL_TESTS(), [&](auto& t) {
+            auto stem = std::filesystem::path { t->file }.stem().string();
+            return std::find(subset.begin(), subset.end(), std::string_view { stem }) == subset.end();
+        });
+    }
+
+    for (auto& t : ALL_TESTS()) {
+        passed += (*t)() ? 1 : 0;
+        // log("test: ", t->file, t->line, t->msg);
+        // log("test", std::filesystem::path { t->file }.stem(), t->line, t->msg);
+    }
+    auto failed = ALL_TESTS().size() - passed;
+    log<false>(Colors::FG_YELLOW2, "Tests complete", Colors::FG_DEFAULT, ": ", passed, " passed, ", failed, " failed");
+
+    return failed == 0;
+}
 #endif
