@@ -84,29 +84,33 @@ template<Container Arg> std::ostream& log_stream(std::ostream& o, const Arg& arg
 }
 
 
-template<bool Space, typename Arg> std::ostream& log_sp(std::ostream& o, Arg arg) {
-    return log_stream(o, arg);
+template<bool Space, typename Arg> std::ostream& log_sp(std::ostream& o, Arg&& arg) {
+    return log_stream(o, std::forward<Arg>(arg));
 }
-template<bool Space, typename First, typename... Args> std::ostream& log_sp(std::ostream& o, First first, Args... args) {
+template<bool Space, typename First, typename... Args> std::ostream& log_sp(std::ostream& o, First&& first, Args&&... args) {
     log_stream(o, first);
-    if constexpr (Space && !std::is_same_v<First, Colors::Codes>) {
+
+    using first_t = std::decay_t<First>;
+    if constexpr (Space
+        && !std::is_same_v<first_t, Colors::Codes>
+        && !std::is_same_v<first_t, decltype(std::hex)>) {
         o << ' ';
     }
-    return log_sp<Space>(o, args...);
+    return log_sp<Space>(o, std::forward<Args>(args)...);
 }
 
-template<bool Space, bool Prefix, typename... Args> std::ostream& log_pf(std::ostream& o, Args... args) {
+template<bool Space, bool Prefix, typename... Args> std::ostream& log_pf(std::ostream& o, Args&&... args) {
     if constexpr (Prefix) {
-        return log_sp<Space>(o, "LOG:", args..., '\n');
+        return log_sp<Space>(o, "LOG:", std::forward<Args>(args)..., '\n');
     } else {
-        return log_sp<Space>(o, args..., '\n');
+        return log_sp<Space>(o, std::forward<Args>(args)..., '\n');
     }
 }
 
-template<bool Space=true, bool Prefix=false, typename...Args> void log(Args... args) {
+template<bool Space=true, bool Prefix=true, typename...Args> void log(Args&&... args) {
 #ifdef JLIB_LOG_VISUALSTUDIO
     auto s = std::ostringstream {};
-    log_pf<Space, Prefix>(s, args...);
+    log_pf<Space, Prefix>(s, std::forward<Args>(args)...);
     const auto str = s.str();
     OutputDebugString(str.c_str());
     std::cerr << str;
