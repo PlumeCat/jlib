@@ -1,13 +1,13 @@
 # CMakeLists.txt
 cmake_minimum_required(VERSION 3.22)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 project(jlib)
 message("CMake Build Type: ${CMAKE_BUILD_TYPE}")
-#  set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-#  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -lstdc++ -lm")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -lstdc++ -lm")
+set(CMAKE_CXX_FLAGS "-lm -lstdc++")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 include_directories(${CMAKE_HOME_DIRECTORY})
 add_compile_definitions(ENABLE_TEST)

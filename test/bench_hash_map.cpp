@@ -1,4 +1,4 @@
-// bench_hashmap2.cpp
+// bench_hash_map.cpp
 
 #include <chrono>
 #include <cstdint>
@@ -11,7 +11,7 @@ using namespace std::literals;
 
 #include <jlib/test_framework.h>
 #include <jlib/log.h>
-#include <jlib/hash_map2.h>
+#include <jlib/hash_map.h>
 
 
 template<typename T> constexpr std::string_view ezname() {
@@ -80,7 +80,7 @@ static auto S() {
 }
 #endif
 using UM = std::unordered_map<TestType, TestType>;
-using HM = hashmap<TestType, TestType>;
+using HM = hash_map<TestType, TestType>;
 static auto KEYS = std::vector<TestType> {};
 void init_keys() {
     if (KEYS.size()) {
@@ -138,16 +138,15 @@ struct Reads final : public Bench {
                 found++;
             }
         }
-        // log(found);
     }
 };
 
-TEST("bench hashmap2 10k inserts") {
+TEST("bench hash_map 10k inserts") {
     Inserts<HM>{}.run(20);
     Inserts<UM>{}.run(20);
 }
 
-TEST("bench hashmap 10k reads") {
+TEST("bench hash_map 10k reads") {
     Reads<HM>{}.run(20);
     Reads<UM>{}.run(20);
 }

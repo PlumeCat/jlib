@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <vector>
-#include <fstream>
 #include <cstdint>
 
 // read binary file
@@ -18,7 +17,6 @@ bool write_binary_file(const std::filesystem::path& path, const std::vector<uint
 
 #ifdef JLIB_IMPLEMENTATION
 
-#include <filesystem>
 #include <fstream>
 
 bool read_binary_file(const std::filesystem::path& path, std::vector<uint8_t>& out_data) {

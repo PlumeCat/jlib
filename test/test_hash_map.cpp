@@ -1,25 +1,25 @@
-// test_hashmap2.cpp
+// test_hash_map.cpp
 #include <unordered_map>
 
 #include <jlib/test_framework.h>
 #include <jlib/log.h>
-#include <jlib/hash_map2.h>
+#include <jlib/hash_map.h>
 
 using UM = std::unordered_map<std::string, std::string>;
-using HM = hashmap<std::string, std::string>;
+using HM = hash_map<std::string, std::string>;
 
 // random string generator
 static auto S() {
     return std::string(10, char('A' + rand() % 26));
 }
 
-TEST("hashmap2 insert") {
+TEST("hash_map insert") {
     auto h = HM{};
     h.insert_or_assign("hello", "world");
     ASSERT(h.at("hello") == "world");
 }
 
-TEST("hashmap2 many insert, no overwrite") {
+TEST("hash_map many insert, no overwrite") {
     auto h = HM{};
     for (auto i = 0; i < 100; i++) {
         auto s = S() + std::to_string(i);
@@ -28,7 +28,7 @@ TEST("hashmap2 many insert, no overwrite") {
     }
 }
 
-TEST("hashmap2 many set (possible overwrites)") {
+TEST("hash_map many set (possible overwrites)") {
     auto h = HM {};
     for (auto i = 0; i < 100; i++) {
         auto s = S();
@@ -37,7 +37,7 @@ TEST("hashmap2 many set (possible overwrites)") {
     }
 }
 
-TEST("hashmap2 fuzzy test") {
+TEST("hash_map fuzzy test") {
     srand(time(nullptr));
 
     auto hm = HM {};
