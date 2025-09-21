@@ -16,31 +16,43 @@ does some compile-time checks to make sure that works as expected
 #define paste(a, b) a##b
 #endif
 template<typename E> concept IsEnum = std::is_enum<E>::value;
-#define jenum_s(Name, ...)                                                                                                            \
-    struct paste(JENUM_VALUES_, Name) {                                                                                               \
-        using Base = std::underlying_type_t<Name>;                                                                                    \
-        Base __VA_ARGS__; /* declare the arguments as members of type Base */                                                         \
-        paste(JENUM_VALUES_, Name)() {                                                                                                \
-            std::memset(this, 0, sizeof(*this)); /* set all members to zero */                                                        \
-            __VA_ARGS__; /* restores members that had an initial value while no-op'ing the ones that didn't */                        \
-            for (auto i = sizeof(Base); i < sizeof(*this); i += sizeof(Base)) {                                                       \
-                (*this)[i] = (*this)[i] ? (*this)[i] : (*this)[i - 1] + 1; /* correct the non-first zeroes */                         \
-            }                                                                                                                         \
-        }                                                                                                                             \
-        Base& operator[](size_t i) {                                                                                                  \
-            return ((Base*)this)[i];                                                                                                  \
-        } /* TODO: undefined behaviour, replace with bit_cast / memcpy */                                                             \
+
+template<IsEnum e> struct jenum_s {};
+
+#define jenum_helper(Name, ...)                                                                                \
+    template<> struct jenum_s<Name> {                                                                          \
+        using Base = std::underlying_type_t<Name>;                                                             \
+        Base __VA_ARGS__; /* declare the arguments as members of type Base */                                  \
+        inline jenum_s() {                                                                                     \
+            std::memset(this, 0, sizeof(*this)); /* set all members to zero */                                 \
+            __VA_ARGS__; /* restores members that had an initial value while no-op'ing the ones that didn't */ \
+            for (auto i = 1; i < count(); i++) {                                                               \
+                (*this)[i] = (*this)[i] ? (*this)[i] : (*this)[i - 1] + 1; /* correct the non-first zeroes */  \
+            }                                                                                                  \
+        }                                                                                                      \
+        inline constexpr int count() {                                                                             \
+            return sizeof(*this) / sizeof(Base);                                                               \
+        }                                                                                                      \
+        inline Base& operator[](size_t i) const {                                                              \
+            return *(((Base*)(void*)this) + i);                                                                \
+        } /* TODO: undefined behaviour, replace with bit_cast / memcpy */                                      \
     };
 
-template<IsEnum E> E enum_from_chars(const char* str) {
+template<IsEnum E> E constexpr enum_from_chars(std::string_view str) {
+    const auto sc = str.find("::");
+    if (sc == std::string_view::npos) {
+        return E {};
+    }
     return E {};
 }
-#define jenum_tostring(Name, ...)                                                                                                     \
-    inline std::ostream& operator<<(std::ostream& o, Name n) {                                                                        \
-        return o << #Name << "::" << (int)n;                                                                                          \
+#define jenum_ostream_rsh(Name, ...)                           \
+    inline std::ostream& operator<<(std::ostream& o, Name n) { \
+        return o << #Name << "::" << (int)n;                   \
     }
 #define jenum_fromstring(Name, ...)
 
+// #define disable_unused_warning()
+// #define enable_unused_warning()
 #if (defined __clang__)
 #define disable_unused_warning() _Pragma("clang diagnostic push") _Pragma("clang diagnostic ignored\"-Wunused-value\"")
 #define enable_unused_warning() _Pragma("clang diagnostic pop")
@@ -49,24 +61,39 @@ template<IsEnum E> E enum_from_chars(const char* str) {
 #define enable_unused_warning() _Pragma("GCC diagnostic pop")
 #endif
 
-#define jenum(Name, ...)                                                                                                              \
-    disable_unused_warning() enum Name { __VA_ARGS__ };                                                                               \
-    jenum_s(Name, __VA_ARGS__) jenum_tostring(Name, __VA_ARGS__) jenum_fromstring(Name, __VA_ARGS__) enable_unused_warning()
+template<IsEnum E> constexpr std::string_view jenum_string() {
+    static_assert(false, "specialization only");
+    return "";
+}
+#define jenum_stringdef(Name, ...)                                                             \
+    static constexpr auto paste(jenum_stringhelper, Name) = std::string_view { #__VA_ARGS__ }; \
+    template<> constexpr std::string_view jenum_string<Name>() {                               \
+        return paste(jenum_stringhelper, Name);                                                \
+    }
 
-#define jenum_base(Name, Base, ...)                                                                                                   \
-    disable_unused_warning() enum Name : Base { __VA_ARGS__ };                                                                        \
-    jenum_s(Name, __VA_ARGS__;\
-    jenum_tostring(Name, __VA_ARGS__)\
-    jenum_fromstring(Name, __VA_ARGS__)\
-    enable_unused_warning()
+#define jenum(Name, ...)                                                                                                                        \
+    disable_unused_warning();                                                                                                                   \
+    enum Name { __VA_ARGS__ };                                                                                                                  \
+    jenum_stringdef(Name, __VA_ARGS__) jenum_helper(Name, __VA_ARGS__) jenum_ostream_rsh(Name, __VA_ARGS__) jenum_fromstring(Name, __VA_ARGS__) \
+        enable_unused_warning();
 
-#define jenum_class(Name, ...)                                                                                                        \
-    disable_unused_warning() enum class Name { __VA_ARGS__ };                                                                         \
-    jenum_s(Name, __VA_ARGS__) jenum_tostring(Name, __VA_ARGS__) jenum_fromstring(Name, __VA_ARGS__) enable_unused_warning()
+#define jenum_base(Name, Base, ...)                                                                                                             \
+    disable_unused_warning();                                                                                                                   \
+    enum Name : Base { __VA_ARGS__ };                                                                                                           \
+    jenum_stringdef(Name, __VA_ARGS__) jenum_helper(Name, __VA_ARGS__) jenum_ostream_rsh(Name, __VA_ARGS__) jenum_fromstring(Name, __VA_ARGS__) \
+        enable_unused_warning();
 
-#define jenum_class_base(Name, Base, ...)                                                                                             \
-    disable_unused_warning() enum class Name : Base { __VA_ARGS__ };                                                                  \
-    jenum_s(Name, __VA_ARGS__) jenum_tostring(Name, __VA_ARGS__) jenum_fromstring(Name, __VA_ARGS__) enable_unused_warning()
+#define jenum_class(Name, ...)                                                                                                                  \
+    disable_unused_warning();                                                                                                                   \
+    enum class Name { __VA_ARGS__ };                                                                                                            \
+    jenum_stringdef(Name, __VA_ARGS__) jenum_helper(Name, __VA_ARGS__) jenum_ostream_rsh(Name, __VA_ARGS__) jenum_fromstring(Name, __VA_ARGS__) \
+        enable_unused_warning();
+
+#define jenum_class_base(Name, Base, ...)                                                                                                       \
+    disable_unused_warning();                                                                                                                   \
+    enum class Name : Base { __VA_ARGS__ };                                                                                                     \
+    jenum_stringdef(Name, __VA_ARGS__) jenum_helper(Name, __VA_ARGS__) jenum_ostream_rsh(Name, __VA_ARGS__) jenum_fromstring(Name, __VA_ARGS__) \
+        enable_unused_warning();
 
 // namespace jenum_internal {
 //     template<typename T> consteval std::string_view templated_func_name() {

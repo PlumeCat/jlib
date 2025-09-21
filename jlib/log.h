@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <cstdint>
+#include <thread>
 
 #include "generic_ostream.h"
 #include "terminal_color.h"
@@ -32,57 +33,14 @@ template<typename T, char Q> std::ostream& operator<<(std::ostream& o, const quo
     return o << Q << q.t << Q;
 }
 
-
 std::ostream& operator<<(std::ostream& o, const uint8_t& arg);
 std::ostream& operator<<(std::ostream& o, const log_pad& align);
-
 std::ostream& log_stream(std::ostream& o, const std::string& arg);
 std::ostream& log_stream(std::ostream& o, const std::string_view& arg);
-
 
 template<typename Arg> std::ostream& log_stream(std::ostream& o, const Arg& arg) {
     return o << arg;
 }
-
-// helper for pair
-template <typename L, typename R> std::ostream& log_stream(std::ostream& o, const std::pair<L,R>& pair) {
-    // return o << "[ " << pair.first << ", " << pair.second << " ]";
-    o << "[ ";
-    log_stream(o, pair.first);
-    o << ", ";
-    log_stream(o, pair.second);
-    return o << " ]";
-}
-
-// helpers for tuple
-template <size_t N, typename... Args> std::ostream& log_tuple_helper(std::ostream& o, const std::tuple<Args...>& t) {
-    log_stream(o, std::get<N>(t));
-    if constexpr (N + 1 < std::tuple_size<std::decay_t<decltype(t)>>::value) {
-        o << ", ";
-        log_tuple_helper<N+1>(o, t);
-    }
-    return o;
-}
-template <typename... Args> std::ostream& log_stream(std::ostream& o, const std::tuple<Args...>& t) {
-    o << '(';
-    return log_tuple_helper<0>(o, t) << ')';
-}
-
-template<Container Arg> std::ostream& log_stream(std::ostream& o, const Arg& arg) {
-    // return o << "CONTAINER:" << __FUNCTION__;
-    o << '{';
-    auto i = arg.cbegin();
-    const auto e = arg.cend();
-    if (i != e) {
-        o << ' ';
-        log_stream(o, *i);
-        for (i++; i != e; i++) {
-            o << ", "; log_stream(o, *i);
-        }
-    }
-    return o << " }";
-}
-
 
 template<bool Space, typename Arg> std::ostream& log_sp(std::ostream& o, Arg&& arg) {
     return log_stream(o, std::forward<Arg>(arg));
@@ -93,7 +51,8 @@ template<bool Space, typename First, typename... Args> std::ostream& log_sp(std:
     using first_t = std::decay_t<First>;
     if constexpr (Space
         && !std::is_same_v<first_t, Colors::Codes>
-        && !std::is_same_v<first_t, decltype(std::hex)>) {
+        && !std::is_same_v<first_t, decltype(std::hex)>
+    ) {
         o << ' ';
     }
     return log_sp<Space>(o, std::forward<Args>(args)...);
@@ -108,14 +67,12 @@ template<bool Space, bool Prefix, typename... Args> std::ostream& log_pf(std::os
 }
 
 template<bool Space=true, bool Prefix=true, typename...Args> void log(Args&&... args) {
-#ifdef JLIB_LOG_VISUALSTUDIO
     auto s = std::ostringstream {};
     log_pf<Space, Prefix>(s, std::forward<Args>(args)...);
     const auto str = s.str();
-    OutputDebugString(str.c_str());
     std::cerr << str;
-#else
-    log_pf<Space, Prefix>(std::cerr, args...);
+#ifdef JLIB_LOG_VISUALSTUDIO
+    OutputDebugString(str.c_str());
 #endif
 }
 

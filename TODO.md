@@ -2,7 +2,7 @@
 
 - [ ] dag and topological sort (from tasklib)
 
-- [ ] improve hash map
+- [x] improve hash map
 
 - [ ] improve heap (constructors, forwarding emplace, etc etc)
 
@@ -15,4 +15,5 @@
 - [x] cancelable defer
 
 - [ ] rewrite jenum with the __PRETTY_FUNCTION__ hack from magic_enum
+
 (but still use the macro approach, struct member initializer trick so we don't have to do the whole range-searching thing)

@@ -45,16 +45,18 @@ TEST("generic ostream maps and sets") {
     log("sets: ", u, v);
 }
 
-// TEST("generic ostream tuples and pairs") {
-//     log("simple pair: ", std::pair { 1, 2.f });
-//     log("simple pair: ", std::pair { 1, "two" });
-
-//     auto t = std::tuple { 1, "two", 3.f };
-//     log("simple tuple: ", t);
-//     log("tuple of tuple: ", std::tuple { std::tuple { 1, "two", 3.f }, std::tuple { 4, "five", 6.f } });
-//     log("deranged tuple: ", std::tuple { 1, "two", 3.f, std::array { 1, 2, 3 }, std::array { std::vector<float> { 1, 2, 3, 4.0 } }
-//     });
-// }
+TEST("generic ostream tuples and pairs") {
+    log("simple pair: ", std::pair { 1, 2.f });
+    log("simple pair: ", std::pair { 1, "two" });
+    log("simple tuple: ", std::tuple { 1, "two", 3.f });
+    log("pair of pair: ", std::pair { std::pair { 1, 2.4 }, std::pair { "thrree", 4 }} );
+    log("tuple of tuple: ", std::tuple { std::tuple { 1, "two", 3.f }, std::tuple { 4, "five", 6.f } });
+    log("pair of tuple", std::pair { std::tuple { 1, 2, 3 }, std::tuple { 4, 5, 6 } });
+    log("tuple of pair", std::tuple { std::pair { 1, 2 }, std::pair { 3, 4 }, std::pair { 5, 6 } });
+    log("container of tuples", std::vector { std::tuple { 0, 1, 2 }, std::tuple { 3, 4, 5 } });
+    log("container of tuples", std::unordered_map<int, std::tuple<int, int, int>> { { 0, { 1, 2, 3 }}, { 0, { 3, 4, 3 }} });
+    log("tuple of containers: ", std::tuple { std::array { 1, 2, 3 }, std::array { std::vector<float> { 1, 2, 3, 4.0 } } });
+}
 
 TEST("generic ostream list/array/vector") {
     log(std::list { 1, 2, 3, 4, 5 });
