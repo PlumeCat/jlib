@@ -4,9 +4,12 @@
 #include <jlib/test_framework.h>
 #include <jlib/log.h>
 #include <jlib/hash_map.h>
+#include <jlib/hash_table.h>
 
 using UM = std::unordered_map<std::string, std::string>;
-using HM = hash_map<std::string, std::string>;
+
+// using HM = hash_map<std::string, std::string>;
+using HM = hash_table<std::string,std::string>;
 
 // random string generator
 static auto S() {
@@ -21,7 +24,7 @@ TEST("hash_map insert") {
 
 TEST("hash_map many insert, no overwrite") {
     auto h = HM{};
-    for (auto i = 0; i < 100; i++) {
+    for (auto i = 0; i < 10000; i++) {
         auto s = S() + std::to_string(i);
         h.insert_or_assign(s, s);
         ASSERT(h.at(s) == s);
@@ -30,7 +33,7 @@ TEST("hash_map many insert, no overwrite") {
 
 TEST("hash_map many set (possible overwrites)") {
     auto h = HM {};
-    for (auto i = 0; i < 100; i++) {
+    for (auto i = 0; i < 10000; i++) {
         auto s = S();
         h.insert_or_assign(s, s);
         ASSERT(h.at(s) == s);
@@ -44,7 +47,7 @@ TEST("hash_map fuzzy test") {
     auto um = UM {};
 
     // bunch of random actions
-    for (auto i = 0; i < 1000; i++) {
+    for (auto i = 0; i < 100000; i++) {
         switch (rand() % 3) {
         case 0: {
                 // add random element

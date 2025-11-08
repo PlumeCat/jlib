@@ -85,7 +85,7 @@ public:
         n.flags = Flags::Busy;
         n.second = FORWARD(value);
     }
-    // const Node* get(const Key& key) const noexcept {
+    const Node* find(auto&& key) const noexcept { return get(FORWARD(key)); }
     const Node* get(auto&& key) const noexcept {
         // hash
         auto h = hash(key);

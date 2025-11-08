@@ -12,10 +12,7 @@ usage:
         avoid defining in headers (probably breaks with multiply-defined symbols if a header is included in multiple TU)
         can be inline next to the definition of whatever is being tested
         or in separate dedicated 'test-*.cpp' files
-    - put IMPLEMENT_TESTS() somewhere once,
-        in a translation unit that includes test_framework.h;
-        can be its own file or just above main
-    - call RUN_TESTS() somewhere, preferably at the top of main(), see below
+    - call run_tests() somewhere, preferably at the top of main(), see below
     - build and run with the macro ENABLE_TEST defined
         it will run all tests instead of the program
         you can run tests in debug and release mode
@@ -39,46 +36,39 @@ example:
 
 
     // in "main.cpp"
-
-    IMPLEMENT_TESTS()
     int main() {
-        RUN_TESTS()
+        run_tests()
         ...
     }
 
-tips:
-    put IMPLEMENT_TESTS() and RUN_TESTS() in a different file
-    and build that file separately as a different test artifact
-    - the tests and test data won't get linked into your main build
-
 */
-
-#include <filesystem>
-#include <algorithm>
-#include <iostream>
-#include <vector>
 
 #include "log.h"
 #include "terminal_color.h"
 
+#include <algorithm>
+#include <filesystem>
+#include <iostream>
+#include <vector>
+
 // util
 #ifndef paste
-#define paste(a, b) a##b
+#    define paste(a, b) a##b
 #endif
 
 // asserts
-#define ASSERT(...)                                                                                                                   \
-    if (!(__VA_ARGS__)) {                                                                                                             \
-        throw std::runtime_error("Assertion failed: " #__VA_ARGS__);                                                                  \
+#define ASSERT(...)                                                  \
+    if (!(__VA_ARGS__)) {                                            \
+        throw std::runtime_error("Assertion failed: " #__VA_ARGS__); \
     }
-#define ASSERT_THROWS(...)                                                                                                            \
-    do {                                                                                                                              \
-        try {                                                                                                                         \
-            __VA_ARGS__;                                                                                                              \
-        } catch (...) {                                                                                                               \
-            break;                                                                                                                    \
-        }                                                                                                                             \
-        throw std::runtime_error("Should have thrown, didn't");                                                                       \
+#define ASSERT_THROWS(...)                                      \
+    do {                                                        \
+        try {                                                   \
+            __VA_ARGS__;                                        \
+        } catch (...) {                                         \
+            break;                                              \
+        }                                                       \
+        throw std::runtime_error("Should have thrown, didn't"); \
     } while (0);
 
 #ifdef ENABLE_TEST
@@ -97,6 +87,7 @@ struct TestBase {
         line(line) {
         ALL_TESTS().push_back(this);
     }
+
     inline bool operator()() {
         try {
             func();
@@ -128,31 +119,32 @@ struct TestBase {
     virtual void func() = 0;
 };
 
-template<size_t N> struct StringLiteral {
-    constexpr StringLiteral(const char (&str)[N]) {
-        std::copy_n(str, N, value);
-    }
-    char value[N];
-};
-template<StringLiteral Filename, size_t Line> struct Test final : public TestBase {
-    Test(const char* msg):
-        TestBase(msg, Filename.value, Line) {}
+// template<size_t N> struct StringLiteral {
+//     constexpr StringLiteral(const char (&str)[N]) {
+//         std::copy_n(str, N, value);
+//     }
+//     char value[N];
+// };
+template <size_t Counter, size_t Line>
+struct Test final: public TestBase {
+    Test(const char* file, const char* msg):
+        TestBase(msg, file, Line) {}
+
     virtual void func() override;
 };
 
-#define TEST_(file, line, counter, ...)                                                                                               \
-    static auto paste(__test_, counter) = Test<file, line>(__VA_ARGS__);                                                              \
-    template<> void Test<file, line>::func()
-#define TEST(...) TEST_(__FILE__, __LINE__, __COUNTER__, __VA_ARGS__)
-#define CHECK(...) TEST_(__FILE__, __LINE__, __COUNTER__, #__VA_ARGS__) { ASSERT(__VA_ARGS__); }
+#    define TEST_(file, line, counter, ...)                                           \
+        static auto paste(__test_, counter) = Test<counter, line>(file, __VA_ARGS__); \
+        template <>                                                                   \
+        void Test<counter, line>::func()
+#    define TEST(...) TEST_(__FILE__, __LINE__, __COUNTER__, __VA_ARGS__)
+#    define CHECK(...)                                                                \
+        TEST_(__FILE__, __LINE__, __COUNTER__, #__VA_ARGS__) { ASSERT(__VA_ARGS__); }
 
 #else
-#define TEST(...)
-#define CHECK(...)
-#define RUN_TESTS()
+#    define TEST(...)
+#    define CHECK(...)
 #endif
-
-
 
 #ifdef JLIB_TEST_IMPLEMENTATION
 
@@ -160,6 +152,7 @@ std::vector<TestBase*>& ALL_TESTS() {
     static auto all_tests = std::vector<TestBase*> {};
     return all_tests;
 }
+
 int run_tests(const std::vector<std::string_view>& subset) {
     log(Colors::FG_YELLOW2, "Running tests", Colors::FG_DEFAULT);
     auto passed = 0;
