@@ -62,7 +62,7 @@ template<IsEnum E> E constexpr enum_from_chars(std::string_view str) {
 #endif
 
 template<IsEnum E> constexpr std::string_view jenum_string() {
-    static_assert(false, "specialization only");
+    // static_assert(false, "specialization only");
     return "";
 }
 #define jenum_stringdef(Name, ...)                                                             \

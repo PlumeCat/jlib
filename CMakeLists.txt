@@ -5,15 +5,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 project(jlib)
 message("CMake Build Type: ${CMAKE_BUILD_TYPE}")
-set(CMAKE_CXX_FLAGS "-lm -lstdc++")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS "-lm -lc++")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 include_directories(${CMAKE_HOME_DIRECTORY})
 add_compile_definitions(ENABLE_TEST)
 
-# file(GLOB_RECURSE test_files test/*.cpp)
-file(GLOB_RECURSE test_files    test/*.cpp)
+file(GLOB_RECURSE test_files test/*.cpp)
 
 add_executable(test_jlib ${test_files})
 

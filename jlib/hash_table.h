@@ -15,7 +15,8 @@
 #define FORWARD(x) std::forward<decltype(x)>(x)
 #endif
 
-template<typename Key, typename Value, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>> class hash_table {
+template<typename Key, typename Value, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>>
+class hash_table {
     static constexpr uint32_t STATUS_BITS = 0xC0u << 24; // top 2 bits
     static constexpr uint32_t INDEX_BITS = ~0x00u & ~STATUS_BITS; // bottom 30 bits
 
