@@ -133,10 +133,18 @@ struct Test final: public TestBase {
     virtual void func() override;
 };
 
+constexpr inline uint32_t comptime_hash(const char* s) {
+    auto hash = 5381u;
+    while (auto c = *s++) {
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash;
+}
+
 #    define TEST_(file, line, counter, ...)                                           \
-        static auto paste(__test_, counter) = Test<counter, line>(file, __VA_ARGS__); \
+        static auto paste(__test_, counter) = Test<counter + comptime_hash(file), line>(file, __VA_ARGS__); \
         template <>                                                                   \
-        void Test<counter, line>::func()
+        void Test<counter + comptime_hash(file), line>::func()
 #    define TEST(...) TEST_(__FILE__, __LINE__, __COUNTER__, __VA_ARGS__)
 #    define CHECK(...)                                                                \
         TEST_(__FILE__, __LINE__, __COUNTER__, #__VA_ARGS__) { ASSERT(__VA_ARGS__); }

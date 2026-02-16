@@ -41,3 +41,9 @@ public:
 inline std::ostream& operator<<(std::ostream& o, Colors::Codes c) {
     return o << "\033[" << int(c) << 'm';
 }
+inline std::string operator+(const std::string& s, Colors::Codes c) {
+    return s + "\033[" + std::to_string(int(c)) + 'm';
+}
+inline std::string operator+(Colors::Codes c, const std::string& s) {
+    return "\033[" + std::to_string(int(c)) + 'm' + s;
+}

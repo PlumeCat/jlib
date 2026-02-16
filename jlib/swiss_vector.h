@@ -29,14 +29,7 @@ gap array
 
 
 template<typename T, bool AllowResize = true> class swiss_vector {
-protected:
-    std::vector<T> storage;
-    std::vector<size_t> free_slots;
-    std::vector<bool> is_busy;
-
-public:
-    using type = swiss_vector<T, AllowResize>;
-
+private:
     template<typename Container, typename Deref> struct iter {
         Container* container;
         size_t index;
@@ -82,6 +75,9 @@ public:
         }
     };
 
+public:
+    using type = swiss_vector<T, AllowResize>;
+
     using iterator = iter<type, T>;
     using const_iterator = iter<const type, const T>;
 
@@ -101,15 +97,16 @@ public:
     }
 
     // TODO: improve efficiency
-    template<typename... Rest>
-    swiss_vector(Rest... rest) {
-        reserve(sizeof...(Rest));
-        (emplace_back(rest), ...);
+    template<typename... Args>
+    swiss_vector(Args... args) {
+        reserve(sizeof...(Args));
+        (emplace_back(args), ...);
     }
 
     // Convenience method for getting all the live elements
     // TODO: improve efficiency
     std::vector<T> collect() {
+        // return std::vector { begin(), end() };
         auto v = std::vector<T>{};
         for (auto i = 0u; i < storage.size(); i++) {
             if (is_busy[i]) {
@@ -121,9 +118,9 @@ public:
 
     // get the element at index; don't assign to return value!
     // if not busy, it's whatever was in storage (most likely a default-constructed T, or a previously removed element)
-    T& at(size_t index) {
-        return storage.at(index);
-    }
+    // T& at(size_t index) {
+    //     return storage.at(index);
+    // }
 
     // may not actually go in the back
     T& emplace_back(auto&&... args) {
@@ -158,10 +155,12 @@ public:
     }
 
     void reserve(size_t size) {
-        storage.reserve(size);
-        free_slots.reserve(size);
-        is_busy.resize(size, false);
-    }
+        if constexpr(AllowResize) {
+            storage.reserve(size);
+            free_slots.reserve(size);
+            is_busy.resize(size, false);
+
+}    }
 
     // remove the value at that index, and mark that slot as available
     void remove(size_t index) {
@@ -181,9 +180,9 @@ public:
     void remove_if(Predicate predicate) {
         auto s = size();
         for (auto i = 0; i < s; i++) {
-            if (busy(i) && predicate(at(i))) {
-                remove(i);
-            }
+            // if (busy(i) && predicate(at(i))) {
+            //     remove(i);
+            // }
         }
     }
 
@@ -234,6 +233,10 @@ private:
             i.index--;
         return i;
     }
+
+    std::vector<T> storage;
+    std::vector<size_t> free_slots;
+    std::vector<bool> is_busy;
 };
 
 // CTAD
