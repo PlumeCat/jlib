@@ -1,10 +1,11 @@
 #pragma once
 
 #include <ostream>
+#include <string>
 
 class Colors {
 public:
-    enum Codes {
+    enum Codes : uint32_t {
         RESET = 0,
 
         FG_BLACK = 30,
@@ -37,6 +38,13 @@ public:
         BG_DEFAULT = 49,
     };
 };
+
+inline std::string operator+(const std::string& s, Colors::Codes c) {
+    return s + "\033[" + std::to_string(int(c)) + 'm';
+}
+inline std::string operator+(Colors::Codes c, const std::string& s) {
+    return "\033[" + std::to_string(int(c)) + 'm' + s;
+}
 
 inline std::ostream& operator<<(std::ostream& o, Colors::Codes c) {
     return o << "\033[" << int(c) << 'm';

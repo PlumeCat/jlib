@@ -3,6 +3,7 @@
 
 #include <array>
 #include <compare>
+#include <functional>
 #include <exception>
 #include <vector>
 
