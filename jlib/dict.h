@@ -2,8 +2,9 @@
 
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <unordered_set>
+
+#include "safe_map.h"
 
 #pragma once
 
@@ -22,6 +23,6 @@ using hash_string = overload_call_op<
     char_pointer_hash
 >;
 using string_set = std::unordered_set<std::string, hash_string, std::equal_to<>>;
-template<typename T> using dict = std::unordered_map<std::string, T, hash_string, std::equal_to<>>;
+template<typename T> using dict = safe_map<std::string, T, hash_string, std::equal_to<>>;
 // TODO: requires hash(string) === hash(string_view) for the same characters
 // need to ensure this is always true (always true for MSVC)

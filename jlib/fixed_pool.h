@@ -62,9 +62,9 @@ public:
     ~fixed_pool() = default;
 
     iterator begin() { return { *this, first_valid }; }
-    iterator end() { return { *this, last_valid + 1 }; }    
+    iterator end() { return { *this, last_valid }; }    
     const_iterator cbegin() const { return { *this, first_valid }; }
-    const_iterator cend() const { return { *this, last_valid + 1 }; }
+    const_iterator cend() const { return { *this, last_valid }; }
     const_iterator begin() const { return cbegin(); }
     const_iterator end() const { return cend(); }
 
@@ -91,7 +91,7 @@ public:
 
         // update first, last
         auto ptr = &storage.at(slot);
-        if (!last_valid || ptr < first_valid) { first_valid = ptr; }
+        if (!first_valid || ptr < first_valid) { first_valid = ptr; }
         if (!last_valid || ptr > last_valid) { last_valid = ptr; }
 
         return storage.at(slot);
