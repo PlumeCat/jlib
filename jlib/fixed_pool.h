@@ -7,165 +7,116 @@
 #include <algorithm>
 #include <iterator>
 
+#define debug(...)
+#define debug(...) log("DEBUG", __VA_ARGS__)
+
 // non growable object pool
 // allocates space for all objects at initialization
 // when an object is added,
-template<typename T> class fixed_pool {
-    template<typename E> struct iter {
+
+template<typename T> class fixed_pool final {
+public:
+    enum class State : uint8_t { Free, Busy };
+    template<typename Pool, typename Elem> struct iter {
+    public:
         using iterator_category = std::forward_iterator_tag;
         using difference_type = std::ptrdiff_t;
-        using value_type = E;
-        using pointer = E*;
-        using reference = E&;
+        using value_type = Elem;
+        using pointer = Elem*;
+        using reference = Elem&;
 
-        iter(const fixed_pool& container, pointer ptr): container(container), ptr(ptr) {}
+        Pool* pool;
+        size_t index;
 
-        reference operator*() const { return *ptr; }
-        pointer operator->() const { return ptr; }
+        iter(Pool* pool, size_t index): pool(pool), index(index) { next(); }
 
-        iter& operator++() { next(); return *this; }
+        iter& operator++() { index++; next(); return *this; }
         iter operator++(int) { const auto that = *this; ++(*this); return that; }
 
-        friend bool operator==(const iter& a, const iter& b) { return a.ptr == b.ptr; }
-        friend bool operator!=(const iter& a, const iter& b) { return a.ptr != b.ptr; }
+        reference operator*() const { return pool->storage.at(index); }
+        pointer operator->() const { return &pool->storage.at(index); }
+
+        friend bool operator==(const iter& a, const iter& b) { return a.index == b.index; }
+        friend bool operator!=(const iter& a, const iter& b) { return a.index != b.index; }
 
     private:
-        const fixed_pool& container;
-        pointer ptr;
-
         void next() {
-            ptr++;
-            if (ptr > container.last_valid) {
-                ptr = container.last_valid + 1;
-                return;
-            }
-            auto index = ptr - container.storage.data();
-            if (container.state.at(index) == State::Free) {
-                next();
+            while (index < pool->total_capacity && pool->state.at(index) != State::Busy) {
+                index++;
             }
         }
     };
 
-public:
-    enum class State : uint8_t { Free, Busy };
+    using this_type = fixed_pool<T>;
+    using iterator = iter<this_type, T>;
+    using const_iterator = iter<const this_type, const T>;
 
-    using iterator = iter<T>;
-    using const_iterator = iter<const T>;
-
-    fixed_pool(size_t capacity) {
+    fixed_pool(size_t capacity):
+        total_capacity(capacity) {
         storage.reserve(capacity);
-        free.reserve(capacity);
         state.resize(capacity, State::Free);
-        first_valid = nullptr;
-        last_valid = nullptr;
+        free_slots.reserve(capacity);
     }
-    ~fixed_pool() = default;
-
-    iterator begin() { return { *this, first_valid }; }
-    iterator end() { return { *this, last_valid }; }    
-    const_iterator cbegin() const { return { *this, first_valid }; }
-    const_iterator cend() const { return { *this, last_valid }; }
-    const_iterator begin() const { return cbegin(); }
-    const_iterator end() const { return cend(); }
+    fixed_pool(const fixed_pool&) = default;
+    fixed_pool(fixed_pool&&) = default;
+    fixed_pool& operator=(const fixed_pool&) = default;
+    fixed_pool& operator=(fixed_pool&&) = default;
 
     T& add(auto&&... args) {
-        // return null if no space
-        if (count() == storage.capacity()) {
-            throw std::runtime_error("fixed_pool is full!");
+        if (count() == total_capacity) {
+            throw std::runtime_error { "fixed_pool full!" };
         }
-
-        auto slot = 0;
-        if (free.size()) {
-            // use free slot
-            slot = free.back(); free.pop_back();
-            storage.at(slot) = T { std::forward<decltype(args)>(args)... };
-
-            // if slot was before first valid, first
+        if (free_slots.size()) {
+            const auto index = free_slots.back();
+            free_slots.pop_back();
+            state.at(index) = State::Busy;
+            storage.at(index) = T { std::forward<decltype(args)>(args)... };
+            return storage.at(index);
         } else {
-            // add to back
-            slot = storage.size();
-            storage.emplace_back(std::forward<decltype(args)>(args)...);
+            state.at(storage.size()) = State::Busy;
+            return storage.emplace_back(std::forward<decltype(args)>(args)...);
         }
-
-        state.at(slot) = State::Busy;
-
-        // update first, last
-        auto ptr = &storage.at(slot);
-        if (!first_valid || ptr < first_valid) { first_valid = ptr; }
-        if (!last_valid || ptr > last_valid) { last_valid = ptr; }
-
-        return storage.at(slot);
     }
-
-    bool remove(T* element) {
-        if (storage.empty()) {
-            return false;
+    void remove(const T& t) {
+        if (&t < storage.data()) {
+            return; // invalid element
+        }
+        
+        const auto index = &t - storage.data();
+        if (index > total_capacity) {
+            return; // invalid element
+        }
+        if (state.at(index) == State::Free) {
+            return; // already free
         }
 
-        if (element < first_valid || element > last_valid) {
-            return false; // not a pointer to storage element
+        state.at(index) = State::Free;
+        if (index == storage.size() - 1) {
+            storage.pop_back();
+        } else {
+            free_slots.emplace_back(index);
         }
-
-        if (const auto index = element - storage.data(); state.at(index) == State::Busy) {
-            // live element
-            state.at(index) = State::Free;
-            if (index == storage.size() - 1) {
-                // last element special case
-                storage.pop_back();
-            } else {
-                free.emplace_back(index);
-            }
-
-            if (count() == 0) {
-                first_valid = nullptr;
-                last_valid = nullptr;
-            } else {
-                if (element == first_valid) {
-                    // scan forwards for next valid element
-                    for (auto i = index; i < state.size(); i++) {
-                        if (state.at(index) == State::Busy) {
-                            first_valid = storage.data() + index;
-                            break;
-                        }
-                    }
-                }
-                if (element == last_valid) {
-                    // scan backwards for next valid element
-                    for (auto i = index; i --> 0;) {
-                        if (state.at(index) == State::Busy) {
-                            last_valid = storage.data() + index;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        return true;
     }
-
     void clear() {
+        free_slots.clear();
         storage.clear();
-        free.clear();
         std::fill(state.begin(), state.end(), State::Free);
-        first_valid = nullptr;
-        last_valid = nullptr;
     }
 
+    size_t capacity() const noexcept {
+        return total_capacity;
+    }
+    size_t count() const noexcept {
+        return storage.size() - free_slots.size();
+    }
 
-    bool is_busy(size_t index) const { return state.at(index) == State::Busy; }
-    size_t count_free_before(size_t index) const { auto f = 0; for (auto i = 0; i < index; i++) { if (!is_busy(i)) f++; } return f; }
+    iterator begin() { return { this, 0u }; }
+    iterator end() { return { this, total_capacity }; }
 
-    size_t capacity() const { return storage.capacity(); }
-    bool has_space() const { return count() != capacity(); }
-    uint32_t count() const { return storage.size() - free.size(); }
-    uint32_t gaps() const { return free.size(); }
-
-private:
+// private:
     std::vector<T> storage;
     std::vector<State> state;
-    std::vector<size_t> free;
-
-    T* first_valid;
-    T* last_valid;
+    std::vector<size_t> free_slots;
+    size_t total_capacity;
+    friend struct iter<this_type, T>;
 };

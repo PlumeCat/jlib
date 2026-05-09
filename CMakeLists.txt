@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 project(jlib)
 message("CMake Build Type: ${CMAKE_BUILD_TYPE}")
-set(CMAKE_CXX_FLAGS "-lm -lc++")
+# set(CMAKE_CXX_FLAGS "-lm -lc++")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 

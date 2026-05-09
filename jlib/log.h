@@ -26,7 +26,7 @@ struct log_pad {
 #define QUOTE quote {} |
 template<char Q = '\''> struct quote {};
 template<typename T, char Q> struct quotewrap { const T& t; };
-template<typename T, char Q='\''> quotewrap<T,Q> operator|(const quote<Q>& q, const T& t) {
+template<typename T, char Q='\''> quotewrap<T,Q> operator|(const quote<Q>& /*q*/, const T& t) {
     return quotewrap<T, Q> { t };
 }
 template<typename T, char Q> std::ostream& operator<<(std::ostream& o, const quotewrap<T, Q>& q) {

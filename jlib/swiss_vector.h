@@ -177,7 +177,7 @@ public:
     }
 
     template<typename Predicate>
-    void remove_if(Predicate predicate) {
+    void remove_if(Predicate /*predicate*/) {
         auto s = size();
         for (auto i = 0; i < s; i++) {
             // if (busy(i) && predicate(at(i))) {
