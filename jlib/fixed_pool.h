@@ -14,11 +14,12 @@
 // allocates space for all objects at initialization
 // at first, items are added at the back of a vector
 // when an item is removed, add the slot to a list of free slots
+// result: ~O(1) insert, O(1) remove, slightly worse than O(1) iteration
 
 template<typename T> class fixed_pool final {
 public:
-    static const auto BUSY = 1u;
-    static const auto FREE = 0u;
+    // static const auto BUSY = 1u;
+    // static const auto FREE = 0u;
     template<typename Pool, typename Elem> struct iter {
     public:
         using iterator_category = std::forward_iterator_tag;
@@ -35,15 +36,15 @@ public:
         iter& operator++() { index++; next(); return *this; }
         iter operator++(int) { const auto that = *this; ++(*this); return that; }
 
-        reference operator*() const { return pool->storage.at(index); }
-        pointer operator->() const { return &pool->storage.at(index); }
+        reference operator*() const { return pool->get_storage().at(index); }
+        pointer operator->() const { return &pool->get_storage().at(index); }
 
         friend bool operator==(const iter& a, const iter& b) { return a.index == b.index; }
         friend bool operator!=(const iter& a, const iter& b) { return a.index != b.index; }
 
     private:
         void next() {
-            while (index < pool->total_capacity && pool->slot_busy.at(index) != BUSY) {
+            while (index < pool->total_capacity && !pool->is_busy(index)) {
                 index++;
             }
         }
@@ -56,7 +57,7 @@ public:
     fixed_pool(size_t capacity):
         total_capacity(capacity) {
         storage.reserve(capacity);
-        slot_busy.resize(capacity, FREE);
+        slot_busy.resize(capacity, false);
         free_slots.reserve(capacity);
     }
     fixed_pool(const fixed_pool&) = default;
@@ -71,11 +72,11 @@ public:
         if (free_slots.size()) {
             const auto index = free_slots.back();
             free_slots.pop_back();
-            slot_busy.at(index) = BUSY;
+            slot_busy.at(index) = true;
             storage.at(index) = T { std::forward<decltype(args)>(args)... };
             return storage.at(index);
         } else {
-            slot_busy.at(storage.size()) = BUSY;
+            slot_busy.at(storage.size()) = true;
             return storage.emplace_back(std::forward<decltype(args)>(args)...);
         }
     }
@@ -88,11 +89,11 @@ public:
         if (index > total_capacity) {
             return; // invalid element
         }
-        if (slot_busy.at(index) == FREE) {
+        if (!slot_busy.at(index)) {
             return; // already free
         }
 
-        slot_busy.at(index) = FREE;
+        slot_busy.at(index) = false;
         if (index == storage.size() - 1) {
             storage.pop_back();
         } else {
@@ -102,7 +103,7 @@ public:
     void clear() {
         free_slots.clear();
         storage.clear();
-        std::fill(slot_busy.begin(), slot_busy.end(), FREE);
+        std::fill(slot_busy.begin(), slot_busy.end(), false);
     }
 
     size_t capacity() const noexcept {
@@ -131,8 +132,7 @@ public:
 
 private:
     std::vector<T> storage;
-    std::vector<uint8_t> slot_busy;
+    std::vector<bool> slot_busy;
     std::vector<size_t> free_slots;
     size_t total_capacity;
-    friend struct iter<this_type, T>;
 };
