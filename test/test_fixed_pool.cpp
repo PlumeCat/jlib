@@ -31,18 +31,43 @@ TEST("fixed pool add/remove") {
     ASSERT(p.collect() == std::vector { 1, 2, 5 });
 }
 
+TEST("fixed pool init list") {
+    const auto fp = fixed_pool { 1, 2, 3, 4, 5 };
+    ASSERT(fp.collect() == std::vector { 1,2,3,4,5 });
+}
+
+TEST("fixed pool erase while iterate") {
+    auto fp = fixed_pool { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    for (auto i = fp.begin(); i != fp.end(); i++) {
+        if (!(*i & 1)) {
+            fp.remove(i);
+            fp.remove(i);
+        }
+    }
+    log(fp.collect());
+    ASSERT(fp.collect() == std::vector { 1, 3, 5, 7, 9 });
+}
+
+TEST("fixed pool remove_if") {
+    auto fp = fixed_pool { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    fp.remove_if([](auto x) { return x & 1; });
+    ASSERT(fp.collect() == std::vector { 2, 4, 6, 8, 10 });
+}
+
 TEST("fixed pool several random add/remove compare to vector") {
     srand(time(nullptr));
-    const auto N = 10'000;
-    const auto M = 10000;
+    const auto N = 10'000u;
+    const auto M = 5'000u;
     
-    auto p = fixed_pool<int>{M};
+    auto p = fixed_pool<int>(M);
     auto v = std::vector<int>{};
     auto nextval = 1010;
 
     auto inserts = 0;
     auto remove_full = 0;
     auto remove_random = 0;
+
+    log("FP fuzz");
     
     for (auto i = 0; i < N; i++) {
         if (p.count() == p.capacity()) {
@@ -77,4 +102,7 @@ TEST("fixed pool several random add/remove compare to vector") {
 
     log("inserts:", inserts, "removes:", remove_random, "removes[f]: ", remove_full);
     ASSERT(v == p.collect());
+    ASSERT(inserts > 0);
+    ASSERT(remove_full > 0);
+    ASSERT(remove_random > 0);
 }
