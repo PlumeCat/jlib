@@ -15,7 +15,7 @@ public:
     using reference = Pool::value_type&;
     using pointer = Pool::value_type*;
 
-    pool_iterator(Pool* pool, size_t index): pool(pool), index(index) { next(); }
+    pool_iterator(Pool& pool, size_t index): pool(pool), index(index) { next(); }
     pool_iterator(const pool_iterator&) = default;
     pool_iterator(pool_iterator&&) = default;
     pool_iterator& operator=(const pool_iterator&) = default;
@@ -23,38 +23,21 @@ public:
 
     pool_iterator& operator++() { index++; next(); return *this; }
     pool_iterator operator++(int) { const auto that = *this; ++(*this); return that; }
-    auto& operator*() const { return pool->get_storage().at(index); }
-    auto* operator->() const { return &pool->get_storage().at(index); }
+    auto& operator*() const { return pool.get_storage().at(index); }
+    auto* operator->() const { return &pool.get_storage().at(index); }
     bool operator==(const pool_iterator& i) { return index == i.index; }
     bool operator!=(const pool_iterator& i) { return index != i.index; }
 
 private:
     void next() {
-        while (index < pool->capacity() && !pool->is_busy(index)) {
-            index++;
-        }
+        while (index < pool.capacity() && !pool.is_busy(index)) index++;
     }
 
     // TODO: pointer + index means 2 indirections to dereference
-    Pool* pool;
+    Pool& pool;
     size_t index;
 };
 
-
-template<typename T> class object_pool final {
-public:
-    using value_type = T;
-    using iterator = pool_iterator<object_pool<T>>;
-    using const_iterator = pool_iterator<const object_pool<T>>;
-
-    object_pool();
-    
-
-    size_t capacity() const noexcept { return storage.capacity(); }
-private:
-
-    std::vector<T> storage;
-};
 
 
 // non growable object pool
@@ -68,6 +51,9 @@ public:
     using value_type = T;
     using iterator = pool_iterator<fixed_pool<T>>;
     using const_iterator = pool_iterator<const fixed_pool<T>>;
+
+    static_assert(sizeof(iterator) == 16);
+    static_assert(sizeof(const_iterator) == 16);
 
     explicit fixed_pool(size_t capacity) {
         storage.reserve(capacity);
@@ -87,7 +73,7 @@ public:
     fixed_pool& operator=(const fixed_pool&) = default;
     fixed_pool& operator=(fixed_pool&&) = default;
 
-    // TODO: growable pool
+    // TODO: growable
 
     T& add(auto&&... args) {
         if (count() == capacity()) {
@@ -104,19 +90,10 @@ public:
             return storage.emplace_back(std::forward<decltype(args)>(args)...);
         }
     }
-    void remove(iterator i) {
-        remove(*i);
-        // slot_busy.at(i.index) = false;
-        // if (i.index == storage.size() - 1) {
-        //     storage.pop_back();
-        // } else {
-        //     free_slots.emplace_back(index);
-        // }
-    }
     void remove(const T& t) {
         const auto index = &t - storage.data();
         if (&t < storage.data() || index > capacity() || !slot_busy.at(index)) {
-            return; // invalid element
+            return;
         }
         slot_busy.at(index) = false;
         if (index == storage.size() - 1) {
@@ -145,10 +122,10 @@ public:
     const std::vector<T>& get_storage() const noexcept { return storage; }
     std::vector<T> collect() const { return std::vector<T> { begin(), end() }; }
 
-    iterator begin() noexcept { return { this, 0u }; }
-    iterator end() noexcept { return { this, capacity() }; }
-    const_iterator cbegin() const noexcept { return { this, 0u }; }
-    const_iterator cend() const noexcept { return { this, capacity() }; }
+    iterator begin() noexcept { return { *this, 0u }; }
+    iterator end() noexcept { return { *this, capacity() }; }
+    const_iterator cbegin() const noexcept { return { *this, 0u }; }
+    const_iterator cend() const noexcept { return { *this, capacity() }; }
     const_iterator begin() const noexcept { return cbegin(); }
     const_iterator end() const noexcept { return cend(); } 
 
