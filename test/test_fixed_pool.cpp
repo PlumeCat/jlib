@@ -1,9 +1,7 @@
 // test_fixed_pool.cpp
 #include <jlib/test_framework.h>
-
-
 #include <jlib/fixed_pool.h>
-#include <string>
+#include <numeric>
 
 TEST("fixed pool add") {
     auto p = fixed_pool<int>(100);
@@ -26,14 +24,26 @@ TEST("fixed pool add/remove") {
 
     ASSERT(p.collect() == std::vector { 1, 2, 4, 5 });
 
-    p.remove(p.get_storage().at(3));
+    p.remove(p.at(3));
 
     ASSERT(p.collect() == std::vector { 1, 2, 5 });
+}
+
+TEST("fixed pool write iterator") {
+    auto p = fixed_pool { 1, 2, 3, 4, 5 };
+    for (auto& i: p) { i *= i; }
+    ASSERT(p.collect() == std::vector { 1, 4, 9, 16, 25 });
 }
 
 TEST("fixed pool init list") {
     const auto fp = fixed_pool { 1, 2, 3, 4, 5 };
     ASSERT(fp.collect() == std::vector { 1,2,3,4,5 });
+}
+
+TEST("fixed pool sum") {
+    auto fp = fixed_pool { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    fp.remove_if([](auto x) { return x == 1 || x == 5; });
+    ASSERT(std::accumulate(fp.begin(), fp.end(), 0) == 49);
 }
 
 TEST ("fixed pool remove while iterate") {
@@ -45,6 +55,7 @@ TEST ("fixed pool remove while iterate") {
         }
     }
     ASSERT(fp.collect() == std::vector { 1, 3, 5, 7, 9 });
+    ASSERT(fp.count() == 5);
 }
 
 TEST("fixed pool remove while iterate (range based for)") {
@@ -54,6 +65,7 @@ TEST("fixed pool remove while iterate (range based for)") {
             fp.remove(i);
         }
     }
+    ASSERT(fp.count() == 5);
     ASSERT(fp.collect() == std::vector { 1, 3, 5, 7, 9 });
 }
 
@@ -64,7 +76,6 @@ TEST("fixed pool remove_if") {
 }
 
 TEST("fixed pool several random add/remove compare to vector") {
-    return;
     srand(time(nullptr));
     const auto N = 10'000u;
     const auto M = 5'000u;
@@ -76,23 +87,21 @@ TEST("fixed pool several random add/remove compare to vector") {
     auto inserts = 0;
     auto remove_full = 0;
     auto remove_random = 0;
-
-    log("FP fuzz");
     
-    for (auto i = 0; i < N; i++) {
+    for (auto i = 0u; i < N; i++) {
         if (p.count() == p.capacity()) {
             // remove random full
             const auto index = rand() % p.capacity();
-            const auto val = p.get_storage().at(index);
-            p.remove(p.get_storage().at(index));
+            const auto val = p.at(index);
+            p.remove(p.at(index));
             std::erase_if(v, [&](auto x) { return x == val;});
             remove_full++;
         } else if (rand() % 10 == 1 && p.count() > 0) {
             // remove random if busy
             const auto index = rand() % p.capacity();
             if (p.is_busy(index)) {
-                const auto val = p.get_storage().at(index);
-                p.remove(p.get_storage().at(index));
+                const auto val = p.at(index);
+                p.remove(p.at(index));
                 std::erase_if(v, [&](auto x) { return x == val;});
                 remove_random++;
             }
@@ -100,7 +109,7 @@ TEST("fixed pool several random add/remove compare to vector") {
             // add random
             // insert into the tracking vector at the correct index
             const auto val = nextval++;
-            const auto index = &p.add(val) - p.get_storage().data();
+            const auto index = &p.add(val) - p.data();
             auto free_before = 0;
             for (auto i = 0; i < index; i++) { free_before += (p.is_busy(i) ? 0 : 1); }
             v.insert(v.begin() + index - free_before, val);

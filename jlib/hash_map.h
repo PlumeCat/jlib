@@ -3,8 +3,6 @@
 
 #include <algorithm>
 #include <exception>
-#include <variant>
-#include <vector>
 #include <cmath>
 #include <memory>
 

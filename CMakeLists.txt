@@ -3,11 +3,17 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
+set(CMAKE_PREFIX_PATH /opt/homebrew)
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang)
 project(jlib)
 message("CMake Build Type: ${CMAKE_BUILD_TYPE}")
-# set(CMAKE_CXX_FLAGS "-lm -lc++")
+
+set(CMAKE_CXX_FLAGS "-lm -lc++")
+
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 include_directories(${CMAKE_HOME_DIRECTORY})
 add_compile_definitions(ENABLE_TEST)

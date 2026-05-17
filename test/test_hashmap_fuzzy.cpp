@@ -1,8 +1,8 @@
-#include "jlib/hash_map.h"
-#include "jlib/test_framework.h"
-#include "jlib/timer.h"
+// #include "jlib/hash_table.h"
+// #include "jlib/test_framework.h"
+// #include "jlib/timer.h"
 
-#include <unordered_map>
+// #include <unordered_map>
 
 // // random key generator
 // std::string random_ascii_string() {
@@ -39,81 +39,81 @@
 // #define timed(name) _timed(name, __COUNTER__)
 
 
-// TEST("hashmap vs unordered_map string lots of inserts") {
-//     const auto FUZZY_SIZE = 10'000;
-//     const auto keys = random_keys(FUZZY_SIZE);
+// // TEST("hashmap vs unordered_map string lots of inserts") {
+// //     const auto FUZZY_SIZE = 10'000;
+// //     const auto keys = random_keys(FUZZY_SIZE);
 
-//     // perf test map
-//     auto benchmark = [&](auto container, auto name) {
-//         timed(name) {
-//             for (auto& k: keys) {
-//                 container.emplace(k, 100);
-//             }
-//         };
-//     };
+// //     // perf test map
+// //     auto benchmark = [&](auto container, auto name) {
+// //         timed(name) {
+// //             for (auto& k: keys) {
+// //                 container.emplace(k, 100);
+// //             }
+// //         };
+// //     };
 
-//     auto hm = hash_map<std::string_view, int, std::hash<std::string_view>> {};
-//     auto um = std::unordered_map<std::string_view, int> {};
-//     benchmark(hm, "hash_map string inserts");
-//     benchmark(um, "unordered_map string inserts");
-// }
+// //     auto hm = hash_map<std::string_view, int, std::hash<std::string_view>> {};
+// //     auto um = std::unordered_map<std::string_view, int> {};
+// //     benchmark(hm, "hash_map string inserts");
+// //     benchmark(um, "unordered_map string inserts");
+// // }
 
-// TEST("hashmap vs unordered_map lots of lookups with sum") {
-//     const auto FUZZY_SIZE = 50'000;
-//     const auto keys = random_keys(FUZZY_SIZE);
+// // TEST("hashmap vs unordered_map lots of lookups with sum") {
+// //     const auto FUZZY_SIZE = 50'000;
+// //     const auto keys = random_keys(FUZZY_SIZE);
 
-//     auto benchmark = [&](auto container, auto name) {
-//         srand(12345);
-//         timed(name) {
-//             auto total = 0;
-//             for (auto i = 0; i < FUZZY_SIZE; i++) {
-//                 total += container.at(keys[rand() % keys.size()]);
-//             }
-//             log("total: ", total);
-//         };
-//     };
+// //     auto benchmark = [&](auto container, auto name) {
+// //         srand(12345);
+// //         timed(name) {
+// //             auto total = 0;
+// //             for (auto i = 0; i < FUZZY_SIZE; i++) {
+// //                 total += container.at(keys[rand() % keys.size()]);
+// //             }
+// //             log("total: ", total);
+// //         };
+// //     };
 
-//     auto hm = hash_map<std::string_view, int, std::hash<std::string_view>> {};
-//     auto um = std::unordered_map<std::string_view, int> {};
-//     for (auto& k: keys) {
-//         hm.emplace(k, k.size());
-//         um.emplace(k, k.size());
-//     }
-//     benchmark(hm, "hash_map lookups");
-//     benchmark(um, "unordered_map lookups");
-// }
+// //     auto hm = hash_map<std::string_view, int, std::hash<std::string_view>> {};
+// //     auto um = std::unordered_map<std::string_view, int> {};
+// //     for (auto& k: keys) {
+// //         hm.emplace(k, k.size());
+// //         um.emplace(k, k.size());
+// //     }
+// //     benchmark(hm, "hash_map lookups");
+// //     benchmark(um, "unordered_map lookups");
+// // }
 
-// TEST("hashmap vs unordered_map iteration") {
-//     const auto FUZZY_SIZE = 10'000;
-//     const auto keys = random_keys(FUZZY_SIZE);
+// // TEST("hashmap vs unordered_map iteration") {
+// //     const auto FUZZY_SIZE = 10'000;
+// //     const auto keys = random_keys(FUZZY_SIZE);
 
-//     auto hm = hash_map<std::string_view, int, std::hash<std::string_view>> {};
-//     auto um = std::unordered_map<std::string_view, int> {};
-//     for (auto& k: keys) {
-//         hm.emplace(k, k.size());
-//         um.emplace(k, k.size());
-//     }
-//     auto benchmark = [&](auto container, auto name) {
-//         srand(12345);
-//         timed(name) {
-//             auto total = 0;
-//             for (auto& [ k, v ]: um) {
-//                 total += v;
-//             }
-//             log("total: ", total);
-//         };
-//     };
+// //     auto hm = hash_map<std::string_view, int, std::hash<std::string_view>> {};
+// //     auto um = std::unordered_map<std::string_view, int> {};
+// //     for (auto& k: keys) {
+// //         hm.emplace(k, k.size());
+// //         um.emplace(k, k.size());
+// //     }
+// //     auto benchmark = [&](auto container, auto name) {
+// //         srand(12345);
+// //         timed(name) {
+// //             auto total = 0;
+// //             for (auto& [ k, v ]: um) {
+// //                 total += v;
+// //             }
+// //             log("total: ", total);
+// //         };
+// //     };
 
-//     benchmark(hm, "hash_map iteration");
-//     benchmark(um, "unordered_map iteration");
+// //     benchmark(hm, "hash_map iteration");
+// //     benchmark(um, "unordered_map iteration");
 
-// }
+// // }
 
 
 // TEST("hashmap many random ops vs unordered_map")
 // {
 //     const auto FUZZY_SIZE = 1000000;
-//     auto hm = hash_map<int, int> {};
+//     auto hm = hash_table<int, int> {};
 //     auto um = std::unordered_map<int, int> {};
 
 //     enum Op {
@@ -156,10 +156,10 @@
 //         std::sort(k2.begin(), k2.end());
 
 //         for (auto k: k1) {
-//             log("hm: ", k, hm[k]);
+//             log("hm: ", k, hm.at(k));
 //         }
 //         for (auto k: k2) {
-//             log("um: ", k, hm[k]);
+//             log("um: ", k, hm.at(k));
 //         }
 
 //     };
@@ -170,35 +170,35 @@
 //         const auto op = rand() % Op::MAX;
 //         switch (op) {
 //             case Op::Construct: {
-//                 hm = hash_map<int, int> {};
+//                 hm = hash_table<int, int> {};
 //                 um = std::unordered_map<int, int> {};
 //                 break;
 //             }
 //             case Op::ConstructInitList: {
-//                 auto il = std::initializer_list<std::pair<int, int>> {
-//                     { NUM(), NUM() },
-//                     { NUM(), NUM() },
-//                     { NUM(), NUM() },
-//                     { NUM(), NUM() },
-//                     { NUM(), NUM() },
-//                     { NUM(), NUM() },
-//                     { NUM(), NUM() },
-//                     { NUM(), NUM() },
-//                     { NUM(), NUM() },
-//                     { NUM(), NUM() },
-//                 };
-//                 hm = hash_map<int, int> { il };
-//                 um = std::unordered_map<int, int> { il.begin(), il.end() };
+//                 // auto il = std::initializer_list<std::pair<int, int>> {
+//                 //     { NUM(), NUM() },
+//                 //     { NUM(), NUM() },
+//                 //     { NUM(), NUM() },
+//                 //     { NUM(), NUM() },
+//                 //     { NUM(), NUM() },
+//                 //     { NUM(), NUM() },
+//                 //     { NUM(), NUM() },
+//                 //     { NUM(), NUM() },
+//                 //     { NUM(), NUM() },
+//                 //     { NUM(), NUM() },
+//                 // };
+//                 // hm = hash_table<int, int> { il.begin(), il.end() };
+//                 // um = std::unordered_map<int, int> { il.begin(), il.end() };
 //                 break;
 //             }
 //             case Op::ConstructCopy: {
 //                 auto b = hm;
-//                 hm = hash_map<int, int>(b);
+//                 hm = hash_table<int, int>(b);
 //                 break;
 //             }
 //             case Op::ConstructMove: {
 //                 auto b = hm;
-//                 hm = hash_map<int, int>(std::move(b));
+//                 hm = hash_table<int, int>(std::move(b));
 //                 break;
 //             }
 //             case Op::Clear: {
@@ -246,7 +246,7 @@
 //             }
 //             case Op::Index: {
 //                 auto k = NUM();
-//                 ASSERT(um[k] == hm[k]);
+//                 ASSERT(um.at(k) == hm.at(k));
 //                 break;
 //             }
 //             case Op::Remove: {
