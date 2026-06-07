@@ -85,7 +85,7 @@ public:
         if (ptr < storage.data() || ptr > storage.data() + storage.capacity()) {
             return;
         }
-        const auto index = ptr - storage.data();
+        const auto index = static_cast<size_t>(ptr - storage.data());
         if (!slot_busy.at(index)) {
             return;
         }

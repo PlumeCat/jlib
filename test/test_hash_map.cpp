@@ -3,7 +3,7 @@
 
 #include <jlib/test_framework.h>
 #include <jlib/log.h>
-#include <jlib/hash_map.h>
+// #include <jlib/hash_map.h>
 #include <jlib/hash_table.h>
 
 using UM = std::unordered_map<std::string, std::string>;
@@ -24,7 +24,7 @@ TEST("hash_map insert") {
 
 TEST("hash_map many insert, no overwrite") {
     auto h = HM{};
-    for (auto i = 0; i < 10000; i++) {
+    for (auto i = 0u; i < 10000u; i++) {
         auto s = S() + std::to_string(i);
         h.insert_or_assign(s, s);
         ASSERT(h.at(s) == s);
@@ -33,7 +33,7 @@ TEST("hash_map many insert, no overwrite") {
 
 TEST("hash_map many set (possible overwrites)") {
     auto h = HM {};
-    for (auto i = 0; i < 10000; i++) {
+    for (auto i = 0u; i < 10000u; i++) {
         auto s = S();
         h.insert_or_assign(s, s);
         ASSERT(h.at(s) == s);
@@ -47,7 +47,7 @@ TEST("hash_map fuzzy test") {
     auto um = UM {};
 
     // bunch of random actions
-    for (auto i = 0; i < 100000; i++) {
+    for (auto i = 0u; i < 100'000u; i++) {
         switch (rand() % 3) {
         case 0: {
                 // add random element
@@ -61,7 +61,7 @@ TEST("hash_map fuzzy test") {
             // delete random element
             if (um.size() > 24) {
                 auto n = rand() % um.size();
-                auto e = um.begin(); for (auto i = 0; i < n; i++) e++;
+                auto e = um.begin(); for (auto i = 0u; i < n; i++) e++;
                 auto k = e->first;
                 um.erase(k);
                 hm.erase(k);
@@ -71,7 +71,7 @@ TEST("hash_map fuzzy test") {
             // update random element
             if (um.size()) {
                 auto n = rand() % um.size();
-                auto e = um.begin(); for (auto i = 0; i < n; i++) e++;
+                auto e = um.begin(); for (auto i = 0u; i < n; i++) e++;
                 auto k = e->first;
                 auto v = S();
                 um.insert_or_assign(k, v);
@@ -81,9 +81,13 @@ TEST("hash_map fuzzy test") {
         }
     }
 
+    log(hm.size(), um.size());
+
     // final check using unordered_map's iteration
     ASSERT(hm.size() == um.size());
+
     for (auto& [ k, v ] : um) {
         ASSERT(hm.at(k) == v);
+        ASSERT(hm.get(k)->second == v);
     }
 }

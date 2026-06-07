@@ -1,6 +1,8 @@
 #include <jlib/defer.h>
 #include <jlib/test_framework.h>
 
+#include <string>
+
 TEST("defer") {
     int x = 1;
     {

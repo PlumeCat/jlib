@@ -3,13 +3,14 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
-set(CMAKE_PREFIX_PATH /opt/homebrew)
+# set(CMAKE_PREFIX_PATH /opt/homebrew)
 set(CMAKE_C_COMPILER clang)
 set(CMAKE_CXX_COMPILER clang)
 project(jlib)
 message("CMake Build Type: ${CMAKE_BUILD_TYPE}")
 
-set(CMAKE_CXX_FLAGS "-lm -lc++")
+set(CMAKE_CXX_FLAGS "-lc++")
+
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -21,6 +22,7 @@ add_compile_definitions(ENABLE_TEST)
 file(GLOB_RECURSE test_files test/*.cpp)
 
 add_executable(test_jlib ${test_files})
+add_test(NAME test COMMAND test_jlib)
 
 # warnings
 target_compile_options(test_jlib

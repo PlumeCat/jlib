@@ -8,12 +8,37 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
-#include <memory>
+#include <stdexcept>
 #include <vector>
 
 #ifndef FORWARD
 #define FORWARD(x) std::forward<decltype(x)>(x)
 #endif
+
+/*
+ctor
+    init-list [ pair [ k, v ] ]
+    size_t buckets
+    begin/end iterator [ pair [ k, v ] ], 
+dtor
+operator=
+
+begin/end
+empty
+size
+count
+find
+contains
+
+at
+
+insert
+insert_or_assign
+emplace
+try_emplace
+erase
+clear
+*/
 
 template<typename Key, typename Value, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>>
 class hash_table {
@@ -24,22 +49,23 @@ class hash_table {
     static constexpr uint32_t TOMBSTONE = 0x80u << 24;
     static constexpr uint32_t BUSY = 0x40u << 24;
 
-    using Storage = std::vector<std::pair<Key, Value>>;
-    struct Index {
+    using storage = std::vector<std::pair<Key, Value>>;
+    struct index_entry {
         uint32_t s_ind; // status:2 | index:30
         uint32_t hash;
     };
 
     mutable Hash hasher;
     mutable Cmp cmp;
+    
     uint32_t num_buckets;
-    std::unique_ptr<Index[]> index;
-    Storage nodes;
+    std::vector<index_entry> index;
+    storage nodes;
 
 public:
 
-    using iterator = typename Storage::iterator;
-    using const_iterator = typename Storage::const_iterator;
+    using iterator = typename storage::iterator;
+    using const_iterator = typename storage::const_iterator;
 
     hash_table() noexcept:
         hash_table(8) {}
@@ -47,18 +73,25 @@ public:
         hasher {},
         cmp {},
         num_buckets { 1u << int(ceil(log2(std::max(8, buckets)))) },
-        index { std::make_unique<Index[]>(num_buckets) },
+        index(num_buckets, { 0, 0 }),
         nodes {} {}
     hash_table(hash_table&&) = default;
     hash_table& operator=(hash_table&&) = default;
     hash_table(const hash_table&) = default;
     hash_table& operator=(const hash_table&) = default;
+    
     ~hash_table() {}
+
+    void clear() {
+        index.clear();
+        nodes.clear();
+        num_buckets = 0;
+    }
 
     // INTERFACE
     void insert_or_assign(auto&& key, auto&& value) {
         const auto h = hash(FORWARD(key));
-        auto* indexptr = linear_probe(h, FORWARD(key));
+        auto* indexptr = &index[linear_probe(h, FORWARD(key)) - index.data()];
         if (!indexptr) {
             reindex();
             insert_or_assign(FORWARD(key), FORWARD(value));
@@ -81,31 +114,36 @@ public:
             }
         }
     }
+    
     auto find(auto&& key) const { return get(FORWARD(key)); }
+    
     const_iterator get(auto&& key) const {
-        const auto h = hash(FORWARD(key));
-        const auto* indexptr = linear_probe(h, FORWARD(key));
+        const auto H = hash(FORWARD(key));
+        const auto* indexptr = linear_probe(H, FORWARD(key));
         if (!indexptr) {
             return cend();
         }
         return cbegin() + (indexptr->s_ind & INDEX_BITS);
     }
-    void erase(auto&& key) {
-        const auto h = hash(FORWARD(key));
-        auto* indexptr = linear_probe(h, FORWARD(key));
+    size_t erase(auto&& key) {
+        const auto H = hash(FORWARD(key));
+        auto* indexptr = &index[linear_probe(H, FORWARD(key)) - index.data()];
         if (!indexptr) {
-            return;
+            return 0;
         }
 
-        const auto i = *indexptr;
+        auto i = *indexptr;
+
         if (is_busy(i)) {
             const auto ind = i.s_ind & INDEX_BITS;
             const auto back = nodes.size() - 1;
+            
             indexptr->s_ind = TOMBSTONE;
+            
             if (ind != back) {
                 std::swap(nodes[ind], nodes[back]);
                 const auto h = hash(nodes[ind].first);
-                for (auto p = 0; p < num_buckets; p++) {
+                for (auto p = 0u; p < num_buckets; p++) {
                     const auto b = bucket(h + p);
                     auto& i = index[b];
                     if ((i.s_ind & INDEX_BITS) == back) {
@@ -115,9 +153,21 @@ public:
                 }
             }
             nodes.resize(nodes.size() - 1);
+            return 1;
         }
+        return 0;
+    }
+    const Value& at(auto&& key) const {
+        if (auto node = get(FORWARD(key)); node != end()) {
+            return node->second;
+        }
+        throw std::runtime_error { "key not found" };
     }
 
+    size_t size() const noexcept { return nodes.size(); }
+    bool empty() const noexcept { return nodes.size() == 0; }
+    bool contains(auto&& key) const { return get(FORWARD(key)) != end(); }
+    
     iterator begin() noexcept { return nodes.begin(); }
     iterator end() noexcept { return nodes.end(); }
     const_iterator begin() const noexcept { return nodes.begin(); }
@@ -125,24 +175,12 @@ public:
     const_iterator cbegin() const noexcept { return nodes.cbegin(); }
     const_iterator cend() const noexcept { return nodes.cend(); }
 
-    auto size() const { return nodes.size(); }
-
-    bool contains(auto&& key) const {
-        return get(FORWARD(key)) != end();
-    }
-    const Value& at(auto&& key) const {
-        if (auto node = get(FORWARD(key)); node != end()) {
-            return node->second;
-        }
-        throw std::exception {};
-    }
-
 private:
-    Index* linear_probe(uint32_t h, auto&& key) const {
-        for (auto p = 0; p < num_buckets; p++) {
-            const auto b = bucket(h + p);
-            auto& i = index[b];
-            if (is_free(i) || (i.hash == h && cmp(nodes[i.s_ind & INDEX_BITS].first, FORWARD(key)))) {
+    const index_entry* linear_probe(uint32_t H, auto&& key) const noexcept {
+        for (auto p = 0u; p < num_buckets; p++) {
+            const auto b = bucket(H + p);
+            auto& i = index.at(b);
+            if (is_free(i) || (i.hash == H && cmp(nodes[i.s_ind & INDEX_BITS].first, FORWARD(key)))) {
                 return &i;
             }
         }
@@ -151,12 +189,12 @@ private:
 
     void reindex() {
         const auto new_num_buckets = num_buckets * 2;
-        auto new_index = std::make_unique<Index[]>(new_num_buckets);
+        auto new_index = std::vector<index_entry>(new_num_buckets, { 0, 0 });
 
-        for (auto _ = 0; _ < num_buckets; _++) {
+        for (auto _ = 0u; _ < num_buckets; _++) {
             auto& i = index[_];
             if (is_busy(i)) {
-                for (auto p = 0; p < new_num_buckets; p++) {
+                for (auto p = 0u; p < new_num_buckets; p++) {
                     const auto b = (i.hash + p) & (new_num_buckets - 1);
                     auto& j = new_index[b];
                     if (is_free(j)) {
@@ -174,7 +212,7 @@ private:
     uint32_t bucket(uint32_t h) const noexcept { return h & (num_buckets - 1); }
     uint32_t hash(auto&& key) const noexcept { return uint32_t(hasher(FORWARD(key)) & 0xfffffffful); }
 
-    bool is_busy(const Index& index) const noexcept { return index.s_ind & BUSY; }
-    bool is_tomb(const Index& index) const noexcept { return index.s_ind & TOMBSTONE; }
-    bool is_free(const Index& index) const noexcept { return (index.s_ind & STATUS_BITS) == FREE; }
+    bool is_busy(const index_entry& index) const noexcept { return index.s_ind & BUSY; }
+    bool is_tomb(const index_entry& index) const noexcept { return index.s_ind & TOMBSTONE; }
+    bool is_free(const index_entry& index) const noexcept { return (index.s_ind & STATUS_BITS) == FREE; }
 };
