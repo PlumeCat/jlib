@@ -122,7 +122,6 @@ public:
     //     return storage.at(index);
     // }
 
-    // may not actually go in the back
     T& emplace_back(auto&&... args) {
         if (free_slots.size()) {
             // use a free slot if there is one
@@ -159,8 +158,8 @@ public:
             storage.reserve(size);
             free_slots.reserve(size);
             is_busy.resize(size, false);
-
-}    }
+        }
+    }
 
     // remove the value at that index, and mark that slot as available
     void remove(size_t index) {
@@ -177,7 +176,7 @@ public:
     }
 
     template<typename Predicate>
-    void remove_if(Predicate predicate) {
+    void remove_if(Predicate /*predicate*/) {
         auto s = size();
         for (auto i = 0; i < s; i++) {
             // if (busy(i) && predicate(at(i))) {

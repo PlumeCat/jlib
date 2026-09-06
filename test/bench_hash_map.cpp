@@ -143,6 +143,8 @@ struct Reads final : public Bench {
                 found++;
             }
         }
+        log(found);
+        
     }
 };
 

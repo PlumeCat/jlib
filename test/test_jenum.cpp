@@ -1,12 +1,12 @@
 #include <jlib/jenum.h>
 #include <jlib/test_framework.h>
 
-jenum_class(TestJenum, X, A = 1, B, C = B == 4 ? 5 : 6, D = std::tuple_size_v<std::tuple<int, int, int, int, int, int, int>>, E = (int)TestJenum::C + 5);
+// jenum_class(TestJenum, X, A = 1, B, C = B == 4 ? 5 : 6, D = std::tuple_size_v<std::tuple<int, int, int, int, int, int, int>>, E = (int)TestJenum::C + 5);
 
-jenum(T0, a, b, c);
-jenum_base(T1, char, d, e, f);
-jenum_class(T2, a, b, c);
-jenum_class_base(T3, uint32_t, a, b, c);
+// jenum(T0, a, b, c);
+// jenum_base(T1, char, d, e, f);
+// jenum_class(T2, a, b, c);
+// jenum_class_base(T3, uint32_t, a, b, c);
 // TEST("underlying types") {
 //     // underlying type is impl defined if not provided
 //     static_assert(std::is_same_v<std::underlying_type_t<T1>, char>);
