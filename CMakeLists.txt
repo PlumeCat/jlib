@@ -11,7 +11,6 @@ message("CMake Build Type: ${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_CXX_FLAGS "-lstdc++ -lm")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 

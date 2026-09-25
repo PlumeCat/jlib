@@ -50,6 +50,7 @@ example:
 #include <filesystem>
 #include <iostream>
 #include <vector>
+#include <stacktrace>
 
 // util
 #ifndef paste
@@ -89,6 +90,7 @@ struct TestBase {
     }
 
     inline bool operator()() {
+        mark();
         try {
             func();
             report(true, nullptr);
@@ -99,20 +101,29 @@ struct TestBase {
         }
     }
 
+    inline void mark() {
+        // if running in VScode, do special formatting so it looks like GCC output
+        // this allows the user to double click a failing test to go to the source
+        if (const auto env = std::getenv("TERM_PROGRAM"); env && env == std::string { "vscode" }) {
+            std::cerr << file << ": " << line;
+        } else {
+            const auto filename = std::filesystem::path(file).filename().string();
+            std::cerr << Colors::FG_CYAN2 << filename << ":" << line;
+        }
+    }
+
     inline void report(bool success, const char* error) {
         // Format like GCC error messages so the visual studio code build configuration can click through to failing tests
-        auto color = success ? Colors::FG_GREEN : Colors::FG_RED;
-        auto message = success ? " success: " : " error: (test failed) ";
+        const auto color = success ? Colors::FG_GREEN : Colors::FG_RED;
+        const auto message = success ? " success: " : " error: (test failed) ";
 
         // if running in VScode, do special formatting so it looks like GCC output
         // this allows the user to double click a failing test to go to the source
-        if (auto env = std::getenv("TERM_PROGRAM"); env && env == std::string { "vscode" }) {
-            log<false, false>(file, ":", line, color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : "");
+        if (const auto env = std::getenv("TERM_PROGRAM"); env && env == std::string { "vscode" }) {
+            log<false, false>(color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : "");
         } else {
-            auto filename = std::filesystem::path(file).filename().string();
-            log<false, false>(
-                Colors::FG_CYAN2, filename, ":", line, color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : ""
-            );
+            const auto filename = std::filesystem::path(file).filename().string();
+            log<false, false>(color, message, Colors::FG_DEFAULT, msg, error ? ": " : "", error ? error : "");
         }
     }
 
