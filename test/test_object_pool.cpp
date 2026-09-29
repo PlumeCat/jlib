@@ -47,6 +47,36 @@ TEST("object pool add/remove") {
 }
 
 
+TEST("object_pool begin/end") {
+    auto vec = object_pool { 1, 2, 3, 4, 5, 6 };
+
+    ASSERT(vec.index_of(vec.begin()) == 0);
+    ASSERT(vec.index_of(vec.end()) == 6);
+
+    vec.remove(5);
+    ASSERT(vec.index_of(vec.begin()) == 0);
+    ASSERT(vec.index_of(vec.end()) == 5);
+
+    vec.remove(0);
+    ASSERT(vec.index_of(vec.begin()) == 1);
+    ASSERT(vec.index_of(vec.end()) == 5);
+
+    vec.remove(4);
+    ASSERT(vec.index_of(vec.begin()) == 1);
+    ASSERT(vec.index_of(vec.end()) == 4);
+
+    vec.remove(2);
+    ASSERT(vec.index_of(vec.begin()) == 1);
+    ASSERT(vec.index_of(vec.end()) == 4);
+
+    vec.remove(1);
+    auto b = vec.index_of(vec.begin());
+    ASSERT(b == 3);
+    ASSERT(vec.index_of(vec.end()) == 4);
+}
+
+
+
 TEST("remove from middle, push two, size didn't change") {
     auto vec = dynamic_pool { 1, 2, 3, 4 };
     vec.add(5);
@@ -135,6 +165,63 @@ TEST("object pool remove_if") {
     fp.remove_if([](auto x) { return x & 1; });
     ASSERT(fp.collect() == std::vector { 2, 4, 6, 8, 10 });
 }
+TEST("object pool remove_if") {
+    // remove odd
+    auto vec = dynamic_pool { 1, 2, 3, 4, 5, 6, 7 };
+    vec.remove_if([](auto i) { return i & 1; });
+    ASSERT(vec.collect() == std::vector { 2, 4, 6 });
+
+    // remove even
+    vec = dynamic_pool { 1, 2, 3, 4, 5, 6, 7 };
+    vec.remove_if([](auto i) { return (i+1) & 1; });
+    ASSERT(vec.collect() == std::vector { 1, 3, 5, 7 });
+
+    // remove from start
+    vec = dynamic_pool { 1, 2, 3, 4, 5, 6, 7 };
+    vec.remove_if([](auto i) { return i < 3; });
+    ASSERT(vec.collect() == std::vector { 3, 4, 5, 6, 7 });
+
+    // remove from end
+    vec = dynamic_pool { 1, 2, 3, 4, 5, 6, 7 };
+    vec.remove_if([](auto i) { return i > 5; });
+    ASSERT(vec.collect() == std::vector { 1, 2, 3, 4, 5 });
+
+    // remove all
+    vec = dynamic_pool { 1, 2, 3, 4, 5, 6, 7 };
+    vec.remove_if([](int) { return true; });
+    ASSERT(vec.collect() == std::vector<int>{});
+
+    // remove none
+    vec = dynamic_pool { 1, 2, 3, 4, 5 };
+    vec.remove_if([] (int) { return false; });
+    ASSERT(vec.collect() == std::vector { 1, 2, 3, 4, 5 });
+}
+
+TEST("object pool range iteration") {
+    auto vec = dynamic_pool { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    vec.remove(1);
+    vec.remove(3);
+    vec.remove(5);
+
+    auto total = 0;
+    for (auto i: vec) {
+        total += i;
+    }
+    ASSERT(total == 43);
+}
+
+
+TEST("object pool remove from end, free slots not used") {
+    auto vec = object_pool { 1, 2, 3, 4, 5, 6 };
+    vec.remove(5);
+    vec.remove(4);
+
+    constexpr auto x = sizeof(std::vector<int>);
+    auto& FREE = *(std::vector<size_t>*)(((char*)&vec) + sizeof(std::vector<int>) + sizeof(std::vector<bool>));
+
+    ASSERT(FREE.size() == 0);
+    ASSERT(FREE.capacity() == 6);
+}
 
 TEST("object pool several random add/remove compare to vector") {
     return;
@@ -143,9 +230,6 @@ TEST("object pool several random add/remove compare to vector") {
     const auto M = 5'000uz;
     
     auto p = dynamic_pool<int>(M);
-
-    // log("{",p.collect(),"}");
-
     auto v = std::vector<int>{};
     auto nextval = 1010;
 
@@ -186,10 +270,8 @@ TEST("object pool several random add/remove compare to vector") {
 
     log("\ninserts:", inserts, "removes:", remove_random, "removes[f]: ", remove_full);
 
-    // log(v);
-    // log(p.collect());
-    // ASSERT(inserts > 0);
-    // ASSERT(remove_full > 0);
-    // ASSERT(remove_random > 0);
+    ASSERT(inserts > 0);
+    ASSERT(remove_full > 0);
+    ASSERT(remove_random > 0);
     ASSERT(v == p.collect());
 }

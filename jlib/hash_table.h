@@ -11,47 +11,51 @@
 #include <stdexcept>
 #include <vector>
 
-#ifndef FORWARD
-#define FORWARD(x) std::forward<decltype(x)>(x)
+#ifndef fwd
+#define fwd(x) std::forward<decltype(x)>(x)
 #endif
 
 /*
-ctor
-    init-list [ pair [ k, v ] ]
-    size_t buckets
-    begin/end iterator [ pair [ k, v ] ], 
-dtor
-operator=
+    ctor
+        init-list [ pair [ k, v ] ]
+        size_t buckets
+        begin/end iterator [ pair [ k, v ] ],
+    dtor
+    operator=
 
-begin/end
-empty
-size
-count
-find
-contains
+    begin/end
+    empty
+    size
+    count
+    find
+    contains
 
-at
+    at
 
-insert
-insert_or_assign
-emplace
-try_emplace
-erase
-clear
+    insert
+    insert_or_assign
+    emplace
+    try_emplace
+    erase
+    clear
 */
+#include "log.h"
 
 template<typename Key, typename Value, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>>
 class hash_table {
-    static constexpr uint32_t STATUS_BITS = 0xC0u << 24; // top 2 bits
-    static constexpr uint32_t INDEX_BITS = ~0x00u & ~STATUS_BITS; // bottom 30 bits
+    // static constexpr uint32_t STATUS_BITS = 0xC0u << 24; // top 2 bits
+    // static constexpr uint32_t INDEX_BITS = ~0x00u & ~STATUS_BITS; // bottom 30 bits
 
-    static constexpr uint32_t FREE = 0x00ull;
-    static constexpr uint32_t TOMBSTONE = 0x80u << 24;
-    static constexpr uint32_t BUSY = 0x40u << 24;
+    static constexpr uint32_t FREE = 0xf7ee;//0x00ull;
+    static constexpr uint32_t BUSY = 0xb15e;//0x40u << 24;
+    static constexpr uint32_t TOMBSTONE = 0xdead;//0x80u << 24;
+    static constexpr uint32_t MAX_TOMBSTONE_RATIO = 2;
+    static constexpr uint32_t MAX_LOAD_RATIO = 2;
 
     using storage = std::vector<std::pair<Key, Value>>;
     struct index_entry {
-        uint32_t s_ind; // status:2 | index:30
+        uint32_t status;
+        uint32_t index;
         uint32_t hash;
     };
 
@@ -59,21 +63,20 @@ class hash_table {
     mutable Cmp cmp;
     
     uint32_t num_buckets;
+    uint32_t num_tombstones;
     std::vector<index_entry> index;
     storage nodes;
 
 public:
-
     using iterator = typename storage::iterator;
     using const_iterator = typename storage::const_iterator;
 
-    hash_table() noexcept:
-        hash_table(8) {}
+    hash_table() noexcept: hash_table(8) {}
     explicit hash_table(int buckets) noexcept:
         hasher {},
         cmp {},
-        num_buckets { 1u << int(ceil(log2(std::max(8, buckets)))) },
-        index(num_buckets, { 0, 0 }),
+        num_buckets { 1u << int(ceil(log2(std::max(buckets, 8)))) },
+        index(num_buckets, { FREE, 0xffffffff, 0 }),
         nodes {} {}
     hash_table(hash_table&&) = default;
     hash_table& operator=(hash_table&&) = default;
@@ -83,82 +86,82 @@ public:
     ~hash_table() {}
 
     void clear() {
-        index.clear();
+        std::fill(index.begin(), index.end(), index_entry { FREE, 0xffffffff, 0 });
         nodes.clear();
-        num_buckets = 0;
     }
 
     // INTERFACE
     void insert_or_assign(auto&& key, auto&& value) {
-        const auto h = hash(FORWARD(key));
-        auto* indexptr = &index[linear_probe(h, FORWARD(key)) - index.data()];
+        const auto H = hash(fwd(key));
+        const auto indexptr = linear_probe(H, fwd(key));
         if (!indexptr) {
-            reindex();
-            insert_or_assign(FORWARD(key), FORWARD(value));
-            return;
+            reindex(num_buckets * 2);
+            return insert_or_assign(fwd(key), fwd(value));
         }
 
-        const auto i = *indexptr;
-        if (is_busy(i)) {
-            // assign case
-            nodes[i.s_ind & INDEX_BITS].second = FORWARD(value);
+        auto& indexref = index.at(indexptr - this->index.data()); // HACK:
+        if (is_busy(indexref)) {
+            nodes.at(indexref.index).second = fwd(value);
         } else {
-            // inserted case
-            const auto n = (uint32_t)nodes.size();
-            *indexptr = { BUSY | (n & INDEX_BITS), h };
-            nodes.emplace_back(FORWARD(key), FORWARD(value));
-
-            // if the load factor is larger than 0.5, eagerly reindex
-            if (nodes.size() > num_buckets / 2) {
-                reindex();
+            nodes.emplace_back(fwd(key), fwd(value));
+            indexref = { BUSY, uint32_t(nodes.size() - 1), H };
+            if (nodes.size() * MAX_LOAD_RATIO > num_buckets) {
+                reindex(num_buckets * 2); // if the load factor is larger than 0.5, eagerly reindex
             }
         }
     }
     
-    auto find(auto&& key) const { return get(FORWARD(key)); }
-    
-    const_iterator get(auto&& key) const {
-        const auto H = hash(FORWARD(key));
-        const auto* indexptr = linear_probe(H, FORWARD(key));
-        if (!indexptr) {
-            return cend();
+    const_iterator find(auto&& key) const {
+        const auto H = hash(fwd(key));
+        const auto* indexptr = linear_probe(H, fwd(key));
+        if (indexptr && is_busy(*indexptr)) {
+            return begin() + indexptr->index;
         }
-        return cbegin() + (indexptr->s_ind & INDEX_BITS);
+        return end();
     }
     size_t erase(auto&& key) {
-        const auto H = hash(FORWARD(key));
-        auto* indexptr = &index[linear_probe(H, FORWARD(key)) - index.data()];
+        const auto H = hash(fwd(key));
+        const auto indexptr = linear_probe(H, fwd(key));
         if (!indexptr) {
             return 0;
         }
-
-        auto i = *indexptr;
-
-        if (is_busy(i)) {
-            const auto ind = i.s_ind & INDEX_BITS;
+        auto* indexref = &index.at(indexptr - index.data());
+        if (is_busy(indexref)) {
+            const auto ki = indexref->index;
             const auto back = nodes.size() - 1;
+            indexref = { TOMBSTONE, 0xffffffff, 0 };
             
-            indexptr->s_ind = TOMBSTONE;
-            
-            if (ind != back) {
-                std::swap(nodes[ind], nodes[back]);
-                const auto h = hash(nodes[ind].first);
+            if (ki != back) {
+                // swap the last stored item into this slot
+                // log("move from back: ", nodes.back(), "to", ki);
+                nodes.at(ki) = std::move(nodes.back());
+
+                // update index entry that was pointing at back
+                // const auto H2 = 0u;//hash(nodes.at(ki).first);
                 for (auto p = 0u; p < num_buckets; p++) {
-                    const auto b = bucket(h + p);
-                    auto& i = index[b];
-                    if ((i.s_ind & INDEX_BITS) == back) {
-                        i.s_ind = BUSY | (ind & INDEX_BITS);
-                        break;
+                    if (auto& Bn = index.at(bucket(/*H2 + */p)); is_busy(Bn) && Bn.index == back) {
+                        Bn.index = ki; break;
                     }
                 }
             }
-            nodes.resize(nodes.size() - 1);
+
+            nodes.pop_back();
+
+            // tombstone "garbage collection"; reindex into a same-size index
+            // this keeps the number of tombstones low
+            if (num_tombstones * MAX_TOMBSTONE_RATIO > num_buckets) {
+                reindex(num_buckets);
+            }
+
             return 1;
         }
+
         return 0;
     }
+
+    /**/Value DEFAULT;
     const Value& at(auto&& key) const {
-        if (auto node = get(FORWARD(key)); node != end()) {
+        if (const auto node = find(fwd(key)); node != end()) {
             return node->second;
         }
         throw std::runtime_error { "key not found" };
@@ -166,7 +169,7 @@ public:
 
     size_t size() const noexcept { return nodes.size(); }
     bool empty() const noexcept { return nodes.size() == 0; }
-    bool contains(auto&& key) const { return get(FORWARD(key)) != end(); }
+    bool contains(auto&& key) const { return find(fwd(key)) != end(); }
     
     iterator begin() noexcept { return nodes.begin(); }
     iterator end() noexcept { return nodes.end(); }
@@ -176,30 +179,29 @@ public:
     const_iterator cend() const noexcept { return nodes.cend(); }
 
 private:
+    // linear probe from H&N, return node matching {H,key} or first free slot
+    // tombstones are skipped
+    // TODO: we could shuffle tombstones forwards???
     const index_entry* linear_probe(uint32_t H, auto&& key) const noexcept {
         for (auto p = 0u; p < num_buckets; p++) {
             const auto b = bucket(H + p);
-            auto& i = index.at(b);
-            if (is_free(i) || (i.hash == H && cmp(nodes[i.s_ind & INDEX_BITS].first, FORWARD(key)))) {
+            const auto& i = index.at(b);
+            if (is_free(i) || (is_busy(i) && i.hash == H && cmp(nodes.at(i.index).first, fwd(key)))) {
                 return &i;
             }
         }
         return nullptr;
     }
 
-    void reindex() {
-        const auto new_num_buckets = num_buckets * 2;
-        auto new_index = std::vector<index_entry>(new_num_buckets, { 0, 0 });
-
-        for (auto _ = 0u; _ < num_buckets; _++) {
-            auto& i = index[_];
+    void reindex(uint32_t new_num_buckets) {
+        auto new_index = std::vector<index_entry>(new_num_buckets, { FREE, 0xffffffff, 0 });
+        for (auto& i: index) {
             if (is_busy(i)) {
                 for (auto p = 0u; p < new_num_buckets; p++) {
                     const auto b = (i.hash + p) & (new_num_buckets - 1);
-                    auto& j = new_index[b];
+                    auto& j = new_index.at(b);
                     if (is_free(j)) {
-                        j = i;
-                        break;
+                        j = i; break;
                     }
                 }
             }
@@ -207,12 +209,13 @@ private:
 
         index = std::move(new_index);
         num_buckets = new_num_buckets;
+        num_tombstones = 0;
     }
 
     uint32_t bucket(uint32_t h) const noexcept { return h & (num_buckets - 1); }
-    uint32_t hash(auto&& key) const noexcept { return uint32_t(hasher(FORWARD(key)) & 0xfffffffful); }
+    uint32_t hash(auto&& key) const noexcept { return uint32_t(hasher(fwd(key)) & 0xfffffffful); }
 
-    bool is_busy(const index_entry& index) const noexcept { return index.s_ind & BUSY; }
-    bool is_tomb(const index_entry& index) const noexcept { return index.s_ind & TOMBSTONE; }
-    bool is_free(const index_entry& index) const noexcept { return (index.s_ind & STATUS_BITS) == FREE; }
+    bool is_busy(const index_entry& index) const noexcept { return index.status == BUSY; }
+    // bool is_tomb(const index_entry& index) const noexcept { return index.status == TOMBSTONE; }
+    bool is_free(const index_entry& index) const noexcept { return index.status == FREE; }
 };

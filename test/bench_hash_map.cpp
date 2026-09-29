@@ -11,7 +11,6 @@ using namespace std::literals;
 
 #include <jlib/test_framework.h>
 #include <jlib/log.h>
-#include <jlib/hash_map.h>
 #include <jlib/hash_table.h>
 
 
@@ -84,7 +83,7 @@ static auto S() {
 }
 #endif
 using UM = std::unordered_map<TestType, TestType>;
-using HM = hash_map<TestType, TestType>;
+// using HM = hash_map<TestType, TestType>;
 using HT = hash_table<TestType, TestType>;
 static auto KEYS = std::vector<TestType> {};
 void init_keys() {
@@ -143,19 +142,51 @@ struct Reads final : public Bench {
                 found++;
             }
         }
-        log(found);
-        
     }
 };
 
-TEST("bench hash_map 10k inserts") {
+template<typename Map>
+struct Iterate final : public Bench {
+    std::string name_ = "1k iterates"s + std::string { ezname<Map>() };
+    virtual std::string_view name() override { return name_; }
+
+    Map map;
+
+    virtual void setup() override {
+        map = Map {};
+        srand(1214);
+        for (auto i = 0; i < 100'000; i++) {
+            auto k = rand();
+            auto v = rand();
+            map.insert_or_assign(k, v);
+        }
+    }
+
+    virtual void func() override {
+        auto sum = 0;
+        for (auto i = 0; i < 1000; i++) {
+            sum = 0;
+            for (auto [ k, v ]: map) {
+                sum += v;
+            }
+        }
+        log(sum);
+    }
+};
+
+TEST("bench hash_map inserts") {
+    log("inserts: ", TESTSIZE);
     Inserts<UM>{}.run(20);
-    Inserts<HM>{}.run(20);
     Inserts<HT>{}.run(20);
 }
 
-TEST("bench hash_map 10k reads") {
+TEST("bench hash_map reads") {
+    log("reads: ", TESTSIZE);
     Reads<UM>{}.run(20);
-    Reads<HM>{}.run(20);
     Reads<HT>{}.run(20);
 }
+
+// TEST("bench hash_map iteration") {
+//     Iterate<std::unordered_map<int, int>>().run(20);
+//     Iterate<hash_table<int, int>>().run(20);
+// }

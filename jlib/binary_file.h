@@ -31,9 +31,6 @@ bool write_binary_file(const std::filesystem::path& path, const std::vector<uint
 
 #ifdef JLIB_IMPLEMENTATION
 
-#include <fstream>
-
-
 bool write_binary_file(const std::filesystem::path& path, const std::vector<uint8_t>& data) {
     auto file = std::ofstream(path, std::ios::binary);
     if (!file.is_open()) {

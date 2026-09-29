@@ -3,13 +3,12 @@
 
 #include <jlib/test_framework.h>
 #include <jlib/log.h>
-// #include <jlib/hash_map.h>
 #include <jlib/hash_table.h>
 
 using UM = std::unordered_map<std::string, std::string>;
 
 // using HM = hash_map<std::string, std::string>;
-using HM = hash_table<std::string,std::string>;
+using HM = hash_table<std::string, std::string>;
 
 // random string generator
 static auto S() {
@@ -81,13 +80,11 @@ TEST("hash_map fuzzy test") {
         }
     }
 
-    log(hm.size(), um.size());
-
     // final check using unordered_map's iteration
     ASSERT(hm.size() == um.size());
 
     for (auto& [ k, v ] : um) {
         ASSERT(hm.at(k) == v);
-        ASSERT(hm.get(k)->second == v);
+        ASSERT(hm.find(k)->second == v);
     }
 }

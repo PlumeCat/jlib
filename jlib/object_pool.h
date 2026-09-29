@@ -182,10 +182,6 @@ public:
         return std::vector<T> { begin(), end() };
     }
 
-    /**/ std::vector<T> collect2() const {
-    /**/     return storage;
-    /**/ }
-
     size_t capacity() const noexcept { return storage.capacity(); }
     size_t width() const noexcept { return storage.size(); }
     size_t count() const noexcept { return storage.size() - free_slots.size(); }

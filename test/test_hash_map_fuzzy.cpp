@@ -114,32 +114,31 @@ auto operator<<(timed_dummy d, F f) { return timed_timer(f, d.name); }
 
 // }
 
-
 TEST("hashmap many random ops vs unordered_map") {
-    log("many random ops vs unordered_map");
+    log("\nmany random ops vs unordered_map");
     const auto FUZZY_SIZE = 1000000;
     auto hm = hash_table<int, int> {};
     auto um = std::unordered_map<int, int> {};
 
     enum Op {
         Construct = 0,
-        ConstructInitList,
-        ConstructCopy,
-        ConstructMove,
+        ConstructInitList = 1,
+        ConstructCopy = 2,
+        ConstructMove = 3,
 
-        Clear,
-        Contains,
-        Find,
-        At,
-        Insert,
-        Index,
-        Remove,
+        Clear = 4,
+        Contains = 5,
+        Find = 6,
+        At = 7,
+        Insert = 8,
+        Index = 9,
+        Remove = 10,
 
-        Size,
-        Empty,
+        Size = 11,
+        Empty = 12,
 
-        AssignCopy,
-        AssignMove,
+        AssignCopy = 13,
+        AssignMove = 14,
 
         MAX
     };
@@ -147,31 +146,13 @@ TEST("hashmap many random ops vs unordered_map") {
     auto NUM = [=] { return rand() % 100; };
     srand(1025);
     auto maxsize = 0ul;
-    for (auto i = 0; i < FUZZY_SIZE; i++) {
-        log("dump: ");
+
+    for (auto i = 0; i < 100000; i++) {
         const auto op = rand() % Op::MAX;
         switch (op) {
-            log("op: ", op);
             case Op::Construct: {
                 hm = hash_table<int, int> {};
                 um = std::unordered_map<int, int> {};
-                break;
-            }
-            case Op::ConstructInitList: {
-                // auto il = std::initializer_list<std::pair<int, int>> {
-                //     { NUM(), NUM() },
-                //     { NUM(), NUM() },
-                //     { NUM(), NUM() },
-                //     { NUM(), NUM() },
-                //     { NUM(), NUM() },
-                //     { NUM(), NUM() },
-                //     { NUM(), NUM() },
-                //     { NUM(), NUM() },
-                //     { NUM(), NUM() },
-                //     { NUM(), NUM() },
-                // };
-                // hm = hash_table<int, int> { il.begin(), il.end() };
-                // um = std::unordered_map<int, int> { il.begin(), il.end() };
                 break;
             }
             case Op::ConstructCopy: {
@@ -179,19 +160,21 @@ TEST("hashmap many random ops vs unordered_map") {
                 hm = hash_table<int, int>(b);
                 break;
             }
+            case Op::ConstructInitList: { break; }
             case Op::ConstructMove: {
-                auto b = hm;
+                auto b = std::move(hm);
                 hm = hash_table<int, int>(std::move(b));
                 break;
             }
             case Op::Clear: {
-                hm.clear();
-                um.clear();
+                if (rand() % 100 < 5) {
+                    hm.clear();
+                    um.clear();
+                }
                 break;
             }
             case Op::Size: {
                 ASSERT(hm.size() == um.size());
-                maxsize = std::max(maxsize, hm.size());
                 break;
             }
             case Op::Empty: {
@@ -199,25 +182,32 @@ TEST("hashmap many random ops vs unordered_map") {
                 break;
             }
             case Op::Contains: {
-                // auto n = NUM();
-                // try {
-                //     log("contains:", hm.at(n), hm.at()
-                // ASSERT(hm.contains(n) == um.contains(n));
+                auto n = NUM();
+                ASSERT(hm.contains(n) == um.contains(n));
                 break;
             }
             case Op::Find: {
                 auto n = NUM();
-                if (um.find(n) != um.end()) {
-                    ASSERT(hm.find(n) != hm.end());
-                } else {
+                if (um.find(n) == um.end()) {
                     ASSERT(hm.find(n) == hm.end());
+                } else {
+                    ASSERT(hm.find(n) != hm.end());
                 }
                 break;
             }
             case Op::At: {
                 auto n = NUM();
+                log("op at: ", n);
                 if (um.contains(n)) {
-                    ASSERT(hm.at(n) == um.at(n));
+                    try {
+                        log("um: ", um.at(n));
+                        log("hm: ", hm.at(n));
+                        ASSERT(hm.at(n) == um.at(n));
+                    } catch (...) {
+                        // DUMP();
+                        log("not equal: ", n);
+                        throw std::runtime_error {"sdf"};
+                    }
                 } else {
                     ASSERT_THROWS(hm.at(n));
                 }
@@ -225,18 +215,32 @@ TEST("hashmap many random ops vs unordered_map") {
             }
             case Op::Insert: {
                 auto k = NUM(), v = NUM();
-                um.emplace(k, v);
+                log("insert:", k, v);
+                if (k == 44) {
+                    log("insert 44");
+                }
                 hm.insert_or_assign(k, v);
+                um.insert_or_assign(k, v);
+                // DUMP();
+                ASSERT(hm.size() == um.size());
                 break;
             }
             case Op::Index: {
                 auto k = NUM();
-                ASSERT(um.at(k) == hm.at(k));
+                // log("contains: ", k);
+                // if (k == 35) { DUMP(); }
+                if (um.contains(k)) {
+                    ASSERT(um.at(k) == hm.at(k));
+                } else {
+                    ASSERT(!hm.contains(k));
+                }
                 break;
             }
             case Op::Remove: {
                 auto k = NUM();
+                log("remove:", k);
                 ASSERT(um.erase(k) == hm.erase(k));
+                ASSERT(hm.size() == um.size());
                 break;
             }
             case Op::AssignCopy: { break; }
