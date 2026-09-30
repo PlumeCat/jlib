@@ -67,8 +67,8 @@ struct Bench {
 };
 
 
-// static const auto TESTSIZE = 100'000;
-static const auto TESTSIZE = 1'000'000;
+static const auto TESTSIZE = 250'000;
+// static const auto TESTSIZE = 1'000'000;
 
 static auto KEYS_STRING = std::vector<std::string> {};
 static auto KEYS_INT = std::vector<int> {};
@@ -76,7 +76,7 @@ static auto KEYS_INT = std::vector<int> {};
 void init_keys() {
     for (auto i = 0; i < TESTSIZE; i++) {
         KEYS_INT.emplace_back(rand());
-        auto& s = KEYS_STRING.emplace_back(100, 'A');
+        auto& s = KEYS_STRING.emplace_back(16, 'A');
         for (auto& c: s) { c = char('A' + rand() % 26); }
     }
 }
