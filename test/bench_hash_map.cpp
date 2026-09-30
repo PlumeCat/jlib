@@ -11,7 +11,7 @@ using namespace std::literals;
 
 #include <jlib/test_framework.h>
 #include <jlib/log.h>
-#include <jlib/hash_table.h>
+#include <jlib/hash_map.h>
 
 
 template<typename T> constexpr std::string_view ezname() {
@@ -83,8 +83,7 @@ static auto S() {
 }
 #endif
 using UM = std::unordered_map<TestType, TestType>;
-// using HM = hash_map<TestType, TestType>;
-using HT = hash_table<TestType, TestType>;
+using HM = hash_map<TestType, TestType>;
 static auto KEYS = std::vector<TestType> {};
 void init_keys() {
     if (KEYS.size()) {
@@ -136,11 +135,8 @@ struct Reads final : public Bench {
     }
 
     virtual void func() override {
-        auto found = 0;
         for (auto i = 0; i < TESTSIZE; i++) {
-            if (map.contains(KEYS[rand() % KEYS.size()])) {
-                found++;
-            }
+            map.find(KEYS[rand() % KEYS.size()]);
         }
     }
 };
@@ -177,16 +173,16 @@ struct Iterate final : public Bench {
 TEST("bench hash_map inserts") {
     log("inserts: ", TESTSIZE);
     Inserts<UM>{}.run(20);
-    Inserts<HT>{}.run(20);
+    Inserts<HM>{}.run(20);
 }
 
 TEST("bench hash_map reads") {
     log("reads: ", TESTSIZE);
     Reads<UM>{}.run(20);
-    Reads<HT>{}.run(20);
+    Reads<HM>{}.run(20);
 }
 
-// TEST("bench hash_map iteration") {
-//     Iterate<std::unordered_map<int, int>>().run(20);
-//     Iterate<hash_table<int, int>>().run(20);
-// }
+TEST("bench hash_map iteration") {
+    Iterate<std::unordered_map<int, int>>().run(10);
+    Iterate<hash_map<int, int>>().run(10);
+}

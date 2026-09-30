@@ -216,7 +216,7 @@ TEST("object pool remove from end, free slots not used") {
     vec.remove(5);
     vec.remove(4);
 
-    constexpr auto x = sizeof(std::vector<int>);
+    // constexpr auto x = sizeof(std::vector<int>);
     auto& FREE = *(std::vector<size_t>*)(((char*)&vec) + sizeof(std::vector<int>) + sizeof(std::vector<bool>));
 
     ASSERT(FREE.size() == 0);

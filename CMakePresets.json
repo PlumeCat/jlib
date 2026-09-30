@@ -5,6 +5,10 @@
 			"name": "Debug",
 			"binaryDir": "${sourceDir}/build/Debug",
 			"cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+		},{
+			"name": "Release",
+			"binaryDir": "${sourceDir}/build/Release",
+			"cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
 		}
 	],
 
@@ -12,6 +16,10 @@
 		{
 			"name": "Debug",
 			"configurePreset": "Debug"
+		},
+		{
+			"name": "Release",
+			"configurePreset": "Release"
 		}
 	]
 }

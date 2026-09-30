@@ -15,11 +15,11 @@ template<typename T, size_t N> struct static_stack final : public std::array<T, 
         (*this)[count++] = t;
     }
 
-    template<typename... Args> void emplace_back(Args&&... args) {
+    void emplace_back(auto&&... args) {
         if (count == N) {
             throw std::runtime_error("static_stack ran out of space");
         }
-        (*this)[count++] = T(std::forward<Args>(args)...);
+        (*this)[count++] = T(std::forward<decltype(args)>(args)...);
     }
 
     void pop_back() {

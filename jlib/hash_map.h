@@ -1,4 +1,4 @@
-// hash_table.h
+// hash_map.h
 
 #pragma once
 
@@ -42,7 +42,7 @@
 #include "log.h"
 
 template<typename Key, typename Value, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>>
-class hash_table {
+class hash_map {
     // static constexpr uint32_t STATUS_BITS = 0xC0u << 24; // top 2 bits
     // static constexpr uint32_t INDEX_BITS = ~0x00u & ~STATUS_BITS; // bottom 30 bits
 
@@ -71,19 +71,19 @@ public:
     using iterator = typename storage::iterator;
     using const_iterator = typename storage::const_iterator;
 
-    hash_table() noexcept: hash_table(8) {}
-    explicit hash_table(int buckets) noexcept:
+    hash_map() noexcept: hash_map(8) {}
+    explicit hash_map(int buckets) noexcept:
         hasher {},
         cmp {},
         num_buckets { 1u << int(ceil(log2(std::max(buckets, 8)))) },
         index(num_buckets, { FREE, 0xffffffff, 0 }),
         nodes {} {}
-    hash_table(hash_table&&) = default;
-    hash_table& operator=(hash_table&&) = default;
-    hash_table(const hash_table&) = default;
-    hash_table& operator=(const hash_table&) = default;
+    hash_map(hash_map&&) = default;
+    hash_map& operator=(hash_map&&) = default;
+    hash_map(const hash_map&) = default;
+    hash_map& operator=(const hash_map&) = default;
     
-    ~hash_table() {}
+    ~hash_map() {}
 
     void clear() {
         std::fill(index.begin(), index.end(), index_entry { FREE, 0xffffffff, 0 });
@@ -125,9 +125,9 @@ public:
         if (!indexptr) {
             return 0;
         }
-        auto* indexref = &index.at(indexptr - index.data());
+        auto& indexref = index.at(indexptr - index.data());
         if (is_busy(indexref)) {
-            const auto ki = indexref->index;
+            const auto ki = indexref.index;
             const auto back = nodes.size() - 1;
             indexref = { TOMBSTONE, 0xffffffff, 0 };
             
@@ -159,7 +159,6 @@ public:
         return 0;
     }
 
-    /**/Value DEFAULT;
     const Value& at(auto&& key) const {
         if (const auto node = find(fwd(key)); node != end()) {
             return node->second;
@@ -194,11 +193,14 @@ private:
     }
 
     void reindex(uint32_t new_num_buckets) {
+        num_buckets = new_num_buckets;
+        num_tombstones = 0;
+
         auto new_index = std::vector<index_entry>(new_num_buckets, { FREE, 0xffffffff, 0 });
         for (auto& i: index) {
             if (is_busy(i)) {
                 for (auto p = 0u; p < new_num_buckets; p++) {
-                    const auto b = (i.hash + p) & (new_num_buckets - 1);
+                    const auto b = bucket(i.hash + p);
                     auto& j = new_index.at(b);
                     if (is_free(j)) {
                         j = i; break;
@@ -208,8 +210,6 @@ private:
         }
 
         index = std::move(new_index);
-        num_buckets = new_num_buckets;
-        num_tombstones = 0;
     }
 
     uint32_t bucket(uint32_t h) const noexcept { return h & (num_buckets - 1); }

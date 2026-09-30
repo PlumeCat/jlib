@@ -63,7 +63,7 @@ TEST("hash_map key test") {
                 // delete random element
                 if (map.size() > 24) {
                     auto n = rand() % map.size();
-                    auto e = map.begin(); for (auto _ = 0; _ < n; _++) e++;
+                    auto e = map.begin(); for (auto _ = 0u; _ < n; _++) e++;
                     auto k = e->first;
                     map.erase(k);
                 }
@@ -72,7 +72,7 @@ TEST("hash_map key test") {
                 // update random element
                 if (map.size()) {
                     auto n = rand() % map.size();
-                    auto e = map.begin(); for (auto _ = 0; _ < n; _++) e++;
+                    auto e = map.begin(); for (auto _ = 0u; _ < n; _++) e++;
                     auto k = e->first;
                     auto v = S();
                     map.insert_or_assign(k, v);
