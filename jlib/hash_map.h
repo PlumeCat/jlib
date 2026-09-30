@@ -102,9 +102,9 @@ public:
             return insert_or_assign(fwd(key), fwd(value));
         }
 
-        auto& indexref = index.at(indexptr - index.data()); // HACK:
+        auto& indexref = index[indexptr - index.data()]; // HACK:
         if (is_busy(indexref)) {
-            nodes.at(indexref.s_id & INDEX_BITS).second = fwd(value);
+            nodes[indexref.s_id & INDEX_BITS].second = fwd(value);
         } else {
             nodes.emplace_back(fwd(key), fwd(value));
             indexref = { BUSY | uint32_t(nodes.size() - 1), H };
@@ -129,7 +129,7 @@ public:
         if (!indexptr) {
             return 0;
         }
-        auto& indexref = index.at(indexptr - index.data());
+        auto& indexref = index[indexptr - index.data()];
         if (is_busy(indexref)) {
             const auto ki = indexref.s_id & INDEX_BITS;
             const auto back = nodes.size() - 1;
@@ -137,13 +137,12 @@ public:
             
             if (ki != back) {
                 // swap the last stored item into this slot
-                // log("move from back: ", nodes.back(), "to", ki);
-                nodes.at(ki) = std::move(nodes.back());
+                nodes[ki] = std::move(nodes.back());
 
                 // update index entry that was pointing at back
-                // const auto H2 = 0u;//hash(nodes.at(ki).first);
+                const auto H2 = hash(nodes[ki].first);
                 for (auto p = 0u; p < num_buckets; p++) {
-                    if (auto& Bn = index.at(bucket(/*H2 + */p)); is_busy(Bn) && (Bn.s_id & INDEX_BITS) == back) {
+                    if (auto& Bn = index[bucket(H2 + p)]; is_busy(Bn) && (Bn.s_id & INDEX_BITS) == back) {
                         Bn.s_id = BUSY | ki; break;
                     }
                 }
@@ -193,8 +192,8 @@ private:
     const index_entry* linear_probe(uint32_t H, auto&& key) const noexcept {
         for (auto p = 0u; p < num_buckets; p++) {
             const auto b = bucket(H + p);
-            const auto& i = index.at(b);
-            if (is_free(i) || (is_busy(i) && i.hash == H && cmp(nodes.at(i.s_id & INDEX_BITS).first, fwd(key)))) {
+            const auto& i = index[b];
+            if (is_free(i) || (is_busy(i) && i.hash == H && cmp(nodes[i.s_id & INDEX_BITS].first, fwd(key)))) {
                 return &i;
             }
         }
@@ -210,7 +209,7 @@ private:
             if (is_busy(i)) {
                 for (auto p = 0u; p < new_num_buckets; p++) {
                     const auto b = bucket(i.hash + p);
-                    auto& j = new_index.at(b);
+                    auto& j = new_index[b];
                     if (is_free(j)) {
                         j = i; break;
                     }
