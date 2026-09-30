@@ -1,10 +1,12 @@
 // bench_hash_map.cpp
 
+#include <cerrno>
 #include <chrono>
 #include <cstdint>
 #include <thread>
 #include <cmath>
 #include <string_view>
+#include <type_traits>
 #include <unordered_map>
 namespace chrono = std::chrono;
 using namespace std::literals;
@@ -13,25 +15,27 @@ using namespace std::literals;
 #include <jlib/log.h>
 #include <jlib/hash_map.h>
 
-
-template<typename T> constexpr std::string_view ezname() {
-    // log(__FUNCTION__);
-    constexpr auto fn = std::string_view { __PRETTY_FUNCTION__ };
-    constexpr auto A = fn.find("[T = ") + 5;
-    constexpr auto B = fn.find("]", A);
-    return(fn.substr(A, B-A));
-
+#ifdef __clang__
+#include <cxxabi.h>
+std::string demangle(const char* name) {
+    int status = -4; // some arbitrary value to eliminate the compiler warning
+    // enable c++11 by passing the flag -std=c++11 to g++
+    std::unique_ptr<char, void(*)(void*)> res {
+        abi::__cxa_demangle(name, NULL, NULL, &status),
+        std::free
+    };
+    return (status==0) ? res.get() : name ;
 }
-// static_assert(ezname<int>() == "int"sv);
-// static_assert(ezname<std::vector<char>>() == "std::vector<char>"sv);
+#else
+#define demangle
+#endif
+
 
 struct Bench {
     virtual void setup() {}
     virtual void func() {}
     virtual void teardown() {}
-    virtual std::string_view name() {
-        return "unknown benchmark";
-    }
+    virtual std::string_view name() { return "unknown benchmark"; }
 
     int trial() {
         setup();
@@ -63,50 +67,32 @@ struct Bench {
 };
 
 
-static const auto TESTSIZE = 100'000;
+// static const auto TESTSIZE = 100'000;
+static const auto TESTSIZE = 1'000'000;
 
+static auto KEYS_STRING = std::vector<std::string> {};
+static auto KEYS_INT = std::vector<int> {};
 
-#define STRINGBENCH
-#ifdef STRINGBENCH
-using TestType = std::string;
-static auto S() {
-    auto s = std::string(100, 'A');
-    for (auto& c: s) {
-        c = char('A' + rand() % 26);
-    }
-    return s;
-}
-#else
-using TestType = int;
-static auto S() {
-    return rand();
-}
-#endif
-using UM = std::unordered_map<TestType, TestType>;
-using HM = hash_map<TestType, TestType>;
-static auto KEYS = std::vector<TestType> {};
 void init_keys() {
-    if (KEYS.size()) {
-        return;
-    }
     for (auto i = 0; i < TESTSIZE; i++) {
-        KEYS.emplace_back(S());
+        KEYS_INT.emplace_back(rand());
+        auto& s = KEYS_STRING.emplace_back(100, 'A');
+        for (auto& c: s) { c = char('A' + rand() % 26); }
     }
 }
-
-
 
 template<typename Map>
 struct Inserts final : public Bench {
-    std::string name_ = "10k inserts "s + std::string { ezname<Map>() };
+    std::string name_ = "inserts "s + std::string { demangle(typeid(Map).name()) };
     virtual std::string_view name() override { return name_; }
 
     Map map;
+    const std::vector<typename Map::key_type>& KEYS;
 
+    Inserts(const auto& keys): KEYS(keys) {}
     virtual void setup() override {
         map = Map {};
         srand(12345);
-        init_keys();
     }
     virtual void func() override {
         for (auto i = 0; i < TESTSIZE; i++) {
@@ -118,15 +104,16 @@ struct Inserts final : public Bench {
 
 template<typename Map>
 struct Reads final : public Bench {
-    std::string name_ = "10k reads "s + std::string { ezname<Map>() };
+    std::string name_ = "reads "s + std::string { demangle(typeid(Map).name()) };
     virtual std::string_view name() override { return name_; }
 
     Map map;
+    const std::vector<typename Map::key_type>& KEYS;
 
+    Reads(const auto& keys): KEYS(keys) {}
     virtual void setup() override {
         map = Map {};
         srand(23456);
-        init_keys();
         for (auto i = 0; i < TESTSIZE; i++) {
             auto k = KEYS[rand() % KEYS.size()];
             auto v = KEYS[rand() % KEYS.size()];
@@ -143,7 +130,7 @@ struct Reads final : public Bench {
 
 template<typename Map>
 struct Iterate final : public Bench {
-    std::string name_ = "1k iterates"s + std::string { ezname<Map>() };
+    std::string name_ = "iteration "s + std::string { demangle(typeid(Map).name()) };
     virtual std::string_view name() override { return name_; }
 
     Map map;
@@ -151,38 +138,44 @@ struct Iterate final : public Bench {
     virtual void setup() override {
         map = Map {};
         srand(1214);
-        for (auto i = 0; i < 100'000; i++) {
-            auto k = rand();
-            auto v = rand();
+        for (auto i = 0; i < TESTSIZE; i++) {
+            const auto k = rand();
+            const auto v = rand();
             map.insert_or_assign(k, v);
         }
     }
 
     virtual void func() override {
         auto sum = 0;
-        for (auto i = 0; i < 1000; i++) {
-            sum = 0;
-            for (auto [ k, v ]: map) {
-                sum += v;
-            }
+        for (auto [ k, v ]: map) {
+            sum += v;
         }
-        log(sum);
+        errno += sum;
     }
 };
 
+TEST("init keys") {
+    srand(12345);
+    init_keys();
+}
+
 TEST("bench hash_map inserts") {
     log("inserts: ", TESTSIZE);
-    Inserts<UM>{}.run(20);
-    Inserts<HM>{}.run(20);
+    Inserts<std::unordered_map<std::string, std::string>>{ KEYS_STRING }.run(20);
+    Inserts<hash_map<std::string, std::string>>{ KEYS_STRING }.run(20);
+    Inserts<std::unordered_map<int, int>>{ KEYS_INT }.run(20);
+    Inserts<hash_map<int, int>>{ KEYS_INT }.run(20);
 }
 
 TEST("bench hash_map reads") {
     log("reads: ", TESTSIZE);
-    Reads<UM>{}.run(20);
-    Reads<HM>{}.run(20);
+    Reads<std::unordered_map<std::string, std::string>>{KEYS_STRING}.run(20);
+    Reads<hash_map<std::string, std::string>>{KEYS_STRING}.run(20);
+    Reads<std::unordered_map<int, int>>{KEYS_INT}.run(20);
+    Reads<hash_map<int, int>>{KEYS_INT}.run(20);
 }
 
 TEST("bench hash_map iteration") {
-    Iterate<std::unordered_map<int, int>>().run(10);
-    Iterate<hash_map<int, int>>().run(10);
+    Iterate<std::unordered_map<int, int>>().run(20);
+    Iterate<hash_map<int, int>>().run(20);
 }
