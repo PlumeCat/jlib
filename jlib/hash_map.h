@@ -39,7 +39,6 @@
     erase
     clear
 */
-#include "log.h"
 
 template<typename Key, typename Value, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>>
 class hash_map {
