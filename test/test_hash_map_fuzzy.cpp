@@ -175,29 +175,30 @@ TEST("hashmap vs unordered_map iteration") {
 
 
 TEST("hashmap many random ops vs unordered_map") {
-    const auto FUZZY_SIZE = 200'000;
+    const auto FUZZY_SIZE = 400'000;
     auto hm = hash_map<int, int> {};
     auto um = std::unordered_map<int, int> {};
 
     enum Op {
         Construct = 0,
-        ConstructInitList = 1,
-        ConstructCopy = 2,
-        ConstructMove = 3,
+        ConstructInitList,
+        ConstructCopy,
+        ConstructMove,
 
-        Clear = 4,
-        Contains = 5,
-        Find = 6,
-        At = 7,
-        Insert = 8,
-        Index = 9,
-        Remove = 10,
+        Clear,
+        Contains,
+        Find,
+        At,
+        Insert,
+        Emplace,
+        Index,
+        Remove,
 
-        Size = 11,
-        Empty = 12,
+        Size,
+        Empty,
 
-        AssignCopy = 13,
-        AssignMove = 14,
+        AssignCopy,
+        AssignMove,
 
         MAX
     };
@@ -263,6 +264,12 @@ TEST("hashmap many random ops vs unordered_map") {
                 auto k = NUM(), v = NUM();
                 hm.insert_or_assign(k, v);
                 um.insert_or_assign(k, v);
+                break;
+            }
+            case Op::Emplace: {
+                auto k = NUM(), v = NUM();
+                hm.try_emplace(k, v);
+                um.try_emplace(k, v);
                 break;
             }
             case Op::Index: {
