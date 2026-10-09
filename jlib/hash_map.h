@@ -32,14 +32,41 @@
     clear
 */
 
-template<typename Key, typename Value, typename Hash = std::hash<Key>, typename Cmp = std::equal_to<Key>>
+
+
+template<typename ... Bases> struct overload_call_op : Bases ... {
+    using is_transparent = void;
+    using Bases::operator() ... ;
+};
+struct char_pointer_hash {
+    auto operator()( const char* ptr ) const noexcept {
+        return std::hash<std::string_view>{}(ptr);
+    }
+};
+template<typename T> struct custom_hash : public std::hash<T> {};
+template<> struct custom_hash<std::string> : overload_call_op<
+    std::hash<std::string>,
+    std::hash<std::string_view>,
+    char_pointer_hash
+> {};
+
+template<typename T> struct custom_cmp : public std::equal_to<T> {};
+template<> struct custom_cmp<std::string> {
+    auto operator()(const std::string& lhs, auto&& rhs) const noexcept {
+        return lhs == rhs;
+    }
+};
+
+
+
+template<typename Key, typename Value, typename Hash = custom_hash<Key>, typename Cmp = custom_cmp<Key>>
 class hash_map {
     static constexpr uint32_t STATUS_BITS = 0b11 << 30; // top 2 bits
     static constexpr uint32_t HASH_BITS = ~STATUS_BITS; // bottom 30 bits
 
     static constexpr uint32_t STATUS_FREE = 0u;
-    static constexpr uint32_t STATUS_BUSY = 0b1 << 31;
-    static constexpr uint32_t STATUS_TOMB = 0b1 << 30;
+    static constexpr uint32_t STATUS_BUSY = 0b10 << 30;
+    static constexpr uint32_t STATUS_TOMB = 0b01 << 30;
 
     static constexpr uint32_t MAX_TOMBSTONE_RATIO = 2;
     static constexpr uint32_t MAX_LOAD_RATIO = 2;
@@ -52,7 +79,6 @@ class hash_map {
     mutable Cmp cmp;
     
     uint32_t num_buckets;
-    uint32_t num_tombstones;
     std::vector<uint32_t> s_hash;
     std::vector<uint32_t> locate;
     storage nodes;
@@ -87,14 +113,14 @@ public:
 
     std::pair<iterator, bool> try_emplace(auto&& key, auto&&... args) {
         const auto H = hash(std::forward<decltype(key)>(key));
-        const auto slot = linear_probe(H, std::forward<decltype(key)>(key));
+        const auto slot = linear_probe_insert(H, std::forward<decltype(key)>(key));
         if (slot == MAX_INDEX) {
             reindex(num_buckets * 2);
             return try_emplace(std::forward<decltype(key)>(key), std::forward<decltype(args)>(args)...);
         }
 
         if (is_busy(s_hash[slot])) {
-            return { nodes.begin() + slot, false };
+            return { nodes.begin() + locate[slot], false };
         } else {
             s_hash[slot] = STATUS_BUSY | H;
             locate[slot] = nodes.size();
@@ -105,14 +131,14 @@ public:
             if (nodes.size() * MAX_LOAD_RATIO > num_buckets) {
                 reindex(num_buckets * 2);
             }
-            return { nodes.begin() + slot, true };
+            return { nodes.end() - 1, true };
         }
 
     }
 
     void insert_or_assign(auto&& key, auto&& value) {
         const auto H = hash(std::forward<decltype(key)>(key));
-        const auto slot = linear_probe(H, std::forward<decltype(key)>(key));
+        const auto slot = linear_probe_insert(H, std::forward<decltype(key)>(key));
         if (slot == MAX_INDEX) {
             reindex(num_buckets * 2);
             return insert_or_assign(std::forward<decltype(key)>(key), std::forward<decltype(value)>(value));
@@ -169,13 +195,6 @@ public:
             }
 
             nodes.pop_back();
-
-            // tombstone "garbage collection"; reindex into a same-size index
-            // this keeps the number of tombstones low
-            if (num_tombstones * MAX_TOMBSTONE_RATIO > num_buckets) {
-                reindex(num_buckets);
-            }
-
             return 1;
         }
 
@@ -206,7 +225,7 @@ public:
     const_iterator cend() const noexcept { return nodes.cend(); }
 
 private:
-    // linear probe from H&N, return node matching {H,key} or first free slot
+    // linear probe from H&N, return slot with key if present or first free slot
     // tombstones are skipped
     // TODO: we could shuffle tombstones forwards???
     uint32_t linear_probe(uint32_t H, auto&& key) const noexcept {
@@ -219,9 +238,25 @@ private:
         return MAX_INDEX;
     }
 
+    // linear probe from H&N, return slot with key if present or first tombstone or free slot found
+    // if scan finds a tombstone it must keep searching for the key, but if not found the tombstone will be used
+    uint32_t linear_probe_insert(uint32_t H, auto&& key) const noexcept {
+        auto first_tomb = MAX_INDEX;
+        for (auto p = 0u; p < num_buckets; p++) {
+            const auto b = bucket(H + p);
+            if (is_tomb(s_hash[b]) && first_tomb == MAX_INDEX) {
+                first_tomb = b;
+            } else if (is_free(s_hash[b])) {
+                return (first_tomb == MAX_INDEX) ? b : first_tomb;
+            } else if (s_hash[b] == (STATUS_BUSY | H) && cmp(nodes[locate[b]].first, key)) {
+                return b;
+            }
+        }
+        return first_tomb;
+    }
+
     void reindex(uint32_t new_num_buckets) {
         num_buckets = new_num_buckets;
-        num_tombstones = 0;
 
         auto new_sh = std::vector<uint32_t>(num_buckets, STATUS_FREE);
         auto new_loc = std::vector<uint32_t>(num_buckets, MAX_INDEX);
@@ -246,5 +281,6 @@ private:
     uint32_t hash(auto&& key) const noexcept { return HASH_BITS & uint32_t(hasher(std::forward<decltype(key)>(key)) & 0xfffffffful); }
 
     bool is_busy(uint32_t s_hash) const noexcept { return (s_hash & STATUS_BITS) == STATUS_BUSY; }
+    bool is_tomb(uint32_t s_hash) const noexcept { return (s_hash & STATUS_BITS) == STATUS_TOMB; }
     bool is_free(uint32_t s_hash) const noexcept { return (s_hash & STATUS_BITS) == STATUS_FREE; }
 };

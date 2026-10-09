@@ -61,37 +61,40 @@ TEST("hash_map fuzzy test") {
     // bunch of random actions
     for (auto i = 0u; i < 100'000u; i++) {
         switch (rand() % 3) {
-        case 0: {
+            case 0: {
                 // add random element
                 auto k = S() + std::to_string(i);
                 auto v = S();
                 um.insert_or_assign(k, v);
                 hm.insert_or_assign(k, v);
+                break;
             }
-            break;
-        case 1:
-            // delete random element
-            if (um.size() > 24) {
-                auto n = rand() % um.size();
-                auto e = um.begin(); for (auto i = 0u; i < n; i++) e++;
-                auto k = e->first;
-                um.erase(k);
-                hm.erase(k);
+            case 1: {
+                // delete random element
+                if (um.size() > 24) {
+                    auto n = rand() % um.size();
+                    auto e = um.begin(); for (auto i = 0u; i < n; i++) e++;
+                    auto k = e->first;
+                    um.erase(k);
+                    hm.erase(k);
+                }
+                break;
             }
-            break;
-        case 2:
-            // update random element
-            if (um.size()) {
-                auto n = rand() % um.size();
-                auto e = um.begin(); for (auto i = 0u; i < n; i++) e++;
-                auto k = e->first;
-                auto v = S();
-                um.insert_or_assign(k, v);
-                hm.insert_or_assign(k, v);
+            case 2: {
+                // update random element
+                if (um.size()) {
+                    auto n = rand() % um.size();
+                    auto e = um.begin(); for (auto i = 0u; i < n; i++) e++;
+                    auto k = e->first;
+                    auto v = S();
+                    um.insert_or_assign(k, v);
+                    hm.insert_or_assign(k, v);
+                }
+                break;
             }
-            break;
         }
     }
+
 
     // final check using unordered_map's iteration
     ASSERT(hm.size() == um.size());
